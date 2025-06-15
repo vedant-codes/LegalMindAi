@@ -74,15 +74,6 @@ Depending on AI confidence and document risk score:
 
 ---
 
-## 📈 Resume & Portfolio Value
-
-- ✅ Full-stack production-grade app
-- ✅ Real-world legal and business impact
-- ✅ Strong NLP/LLM backend + clean UI
-- ✅ Demonstrates practical use of AI for compliance and trust
-
----
-
 ## 🔮 Future Roadmap
 
 - 🔁 **Contract Version Comparison**
