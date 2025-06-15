@@ -1,74 +1,104 @@
-<<<<<<< HEAD
-# Getting Started with Create React App
+# 🚀 LegalMind.AI – AI-Powered Legal Document Companion
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+LegalMind.AI is an intelligent web application that analyzes, summarizes, classifies, and explains legal documents such as contracts, policies, and agreements. Using cutting-edge NLP models from Hugging Face, it enables startups, freelancers, and non-lawyers to understand and negotiate complex legal texts more effectively.
 
-## Available Scripts
+---
 
-In the project directory, you can run:
+## 🧠 What It Does
 
-### `npm start`
+LegalMind.AI transforms dense legal jargon into digestible, actionable insights:
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- ✨ **Summarizes** lengthy documents
+- 🔍 **Classifies** document types and flags risky clauses
+- 🏷️ **Extracts entities** (names, dates, obligations, amounts)
+- ❓ **Answers legal questions** contextually
+- ✍️ **Suggests improved clauses** for negotiation
+- 🌍 **Supports multiple languages** for translation & localization
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+---
 
-### `npm test`
+## 🌍 Problem It Solves
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+Legal contracts are often inaccessible to non-experts. LegalMind.AI addresses:
+- Expensive and time-consuming legal consultations
+- Hidden risks in everyday business agreements
+- The gap between legal complexity and user understanding
 
-### `npm run build`
+By democratizing legal document analysis, LegalMind.AI enables smarter, safer decisions for small businesses and individuals.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+---
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+## 🔧 Features & Hugging Face Tasks
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+| Feature | Hugging Face Task |
+|--------|------------------|
+| Document Summarization | `text2text-generation` |
+| Clause Classification | `text-classification` |
+| Named Entity Extraction | `token-classification` |
+| Legal Q&A | `question-answering` |
+| Negotiation Suggestions | `text-generation` |
+| Optional: Multilingual Support | `translation` |
 
-### `npm run eject`
+---
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+## 🛠 Tech Stack
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+### 🧩 Backend
+- **FastAPI** – REST API for ML and document logic
+- **Hugging Face Transformers** – NLP model inference
+- **Pydantic** – Input/output validation
+- **PDF Parsing** – `pdfplumber`, `PyMuPDF`, or `unstructured`
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### 🎨 Frontend
+- **React.js** – React framework for performance & scalability
+- **Tailwind CSS** – Utility-first responsive design
+- **Framer Motion** – Animations
+- **LangChain** (optional) – Chain-of-thought for advanced LLM workflows
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+### 🧠 Vector Search
+- **Pinecone** or **FAISS** – Semantic clause comparison
 
-## Learn More
+### 🛠 DevOps & Storage
+- **PostgreSQL** – User data and document storage
+- **Docker** – Containerization
+- **Cloud** – Render / Railway / AWS / Azure
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+---
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+## 🚦 Adaptive Security Responses
 
-### Code Splitting
+Depending on AI confidence and document risk score:
+- 🕵️ Logs anomalies for admin review
+- 🔐 Prompts user for confirmation (re-verification)
+- ❌ Restricts access to high-risk clauses (for compliance)
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+---
 
-### Analyzing the Bundle Size
+## 📈 Resume & Portfolio Value
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+- ✅ Full-stack production-grade app
+- ✅ Real-world legal and business impact
+- ✅ Strong NLP/LLM backend + clean UI
+- ✅ Demonstrates practical use of AI for compliance and trust
 
-### Making a Progressive Web App
+---
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+## 🔮 Future Roadmap
 
-### Advanced Configuration
+- 🔁 **Contract Version Comparison**
+- 🌐 **Clause Library + Templates**
+- 🔐 **User accounts with document history**
+- 🧠 **Federated Learning** for on-device fine-tuning
+- 💬 **Chatbot UI for Q&A** over documents
+- 📦 **SDK / API as a Service** for legal startups
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+---
 
-### Deployment
+## 📄 How to Run
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+### 1. Backend (FastAPI + Hugging Face)
 
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
-=======
-# LegalMindAi
->>>>>>> c2e3a303d4a654d1c7ff53d323481423a8c48dcd
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
