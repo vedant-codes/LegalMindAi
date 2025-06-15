@@ -84,7 +84,10 @@ const templates = [
     category: "Business",
     downloads: 534,
     rating: 4.8,
+
+    
     icon: UserCheck, // ✅ Fixed here
+
     color: "bg-teal-50 text-teal-600",
     tags: ["Partnership", "Business", "Collaboration"],
     lastUpdated: "2023-12-28",

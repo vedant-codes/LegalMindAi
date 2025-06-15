@@ -28,41 +28,101 @@ import {
 } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
 import { motion } from "framer-motion"
+import { useLocation } from "react-router-dom"
+import axios from "axios"
+import { useRef } from "react"
+import { useEffect } from "react"
 
 // Mock data for demonstration
-const mockAnalysis = {
-  id: "doc_123",
-  name: "Service Agreement - TechCorp.pdf",
-  type: "Service Agreement",
-  riskScore: 72,
-  summary:
-    "This is a comprehensive service agreement between TechCorp and the client covering software development services, payment terms, intellectual property rights, and termination clauses. The agreement includes standard confidentiality provisions and liability limitations.",
-  entities: {
-    parties: ["TechCorp LLC", "Client Company Inc."],
-    dates: ["2024-01-15", "2024-12-31"],
-    amounts: ["$50,000", "$5,000"],
-    obligations: ["Deliver software within 90 days", "Monthly progress reports", "24/7 support"],
-  },
-  riskAreas: [
-    {
-      clause: "Indemnification",
-      risk: "high",
-      description: "Broad indemnification clause may expose you to significant liability",
-    },
-    {
-      clause: "Termination",
-      risk: "medium",
-      description: "30-day notice period may be insufficient for project completion",
-    },
-    { clause: "Payment Terms", risk: "low", description: "Standard NET-30 payment terms" },
-  ],
-}
+// const mockAnalysis = {
+//   id: "doc_123",
+//   name: "Service Agreement - TechCorp.pdf",
+//   type: "Service Agreement",
+//   riskScore: 72,
+//   summary:
+//     "This is a comprehensive service agreement between TechCorp and the client covering software development services, payment terms, intellectual property rights, and termination clauses. The agreement includes standard confidentiality provisions and liability limitations.",
+//   entities: {
+//     parties: ["TechCorp LLC", "Client Company Inc."],
+//     dates: ["2024-01-15", "2024-12-31"],
+//     amounts: ["$50,000", "$5,000"],
+//     obligations: ["Deliver software within 90 days", "Monthly progress reports", "24/7 support"],
+//   },
+//   riskAreas: [
+//     {
+//       clause: "Indemnification",
+//       risk: "high",
+//       description: "Broad indemnification clause may expose you to significant liability",
+//     },
+//     {
+//       clause: "Termination",
+//       risk: "medium",
+//       description: "30-day notice period may be insufficient for project completion",
+//     },
+//     { clause: "Payment Terms", risk: "low", description: "Standard NET-30 payment terms" },
+//   ],
+// }
 
 export default function AnalysisPage() {
+  const [answer, setAnswer] = useState('')
+
+  const askQuestion = async () => {
+    if (!question.trim()) return;
+
+    try {
+      const res = await axios.post("http://localhost:3000/api/qna", {
+        schema: file.analysis,
+        prompt: question,
+      });
+
+      console.log("Answer:", res.data.result);
+      setAnswer(res.data.result);
+    } catch (error) {
+      console.error("Error asking question:", error);
+    }
+  };
+
+  const location = useLocation()
+  const { file } = location.state || {}
+  console.log(file)
   const { id } = useParams()
   const [question, setQuestion] = useState("")
   const [isListening, setIsListening] = useState(false)
   const [negotiationTone, setNegotiationTone] = useState("balanced")
+  const recognitionRef = useRef(null);
+
+  useEffect(() => {
+  if (!("webkitSpeechRecognition" in window)) {
+    alert("Sorry, your browser doesn't support speech recognition.");
+    return;
+  }
+
+  const recognition = new window.webkitSpeechRecognition();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = "en-US";
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript;
+    setQuestion(transcript);
+    setIsListening(false);
+  };
+
+  recognition.onend = () => {
+    setIsListening(false);
+  };
+
+  recognitionRef.current = recognition;
+}, []);
+
+const toggleListening = () => {
+  if (isListening) {
+    recognitionRef.current.stop();
+    setIsListening(false);
+  } else {
+    recognitionRef.current.start();
+    setIsListening(true);
+  }
+};
 
   const getRiskColor = (risk) => {
     switch (risk) {
@@ -140,15 +200,15 @@ export default function AnalysisPage() {
         <div className="mb-8">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-bold text-slate-800 mb-2">{mockAnalysis.name}</h1>
+              <h1 className="text-3xl font-bold text-slate-800 mb-2">{file.name}</h1>
               <div className="flex items-center space-x-4">
-                <Badge variant="secondary">{mockAnalysis.type}</Badge>
+                <Badge variant="secondary">{file.type}</Badge>
                 <span className="text-slate-600">Analyzed 2 minutes ago</span>
               </div>
             </div>
             <div className="text-right">
-              <div className="text-2xl font-bold text-slate-800 mb-1">Risk Score: {mockAnalysis.riskScore}/100</div>
-              <Progress value={mockAnalysis.riskScore} className="w-32" />
+              <div className="text-2xl font-bold text-slate-800 mb-1">Risk Score: {file.riskScore}/100</div>
+              <Progress value={file.riskScore} className="w-32" />
             </div>
           </div>
         </div>
@@ -172,7 +232,7 @@ export default function AnalysisPage() {
                     <CardDescription>AI-generated overview of your legal document</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-slate-700 leading-relaxed">{mockAnalysis.summary}</p>
+                    <p className="text-slate-700 leading-relaxed">{file.analysis.summary}</p>
                   </CardContent>
                 </Card>
 
@@ -186,7 +246,7 @@ export default function AnalysisPage() {
                         <Users className="w-5 h-5 text-blue-600" />
                         <div>
                           <p className="font-medium text-slate-800">Parties Involved</p>
-                          <p className="text-sm text-slate-600">{mockAnalysis.entities.parties.length} parties</p>
+                          <p className="text-sm text-slate-600">{file.analysis.parties.length} parties</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
@@ -194,7 +254,7 @@ export default function AnalysisPage() {
                         <div>
                           <p className="font-medium text-slate-800">Financial Terms</p>
                           <p className="text-sm text-slate-600">
-                            {mockAnalysis.entities.amounts.length} amounts identified
+                            {file.analysis.financialTerms.length} amounts identified
                           </p>
                         </div>
                       </div>
@@ -202,7 +262,7 @@ export default function AnalysisPage() {
                         <Calendar className="w-5 h-5 text-purple-600" />
                         <div>
                           <p className="font-medium text-slate-800">Important Dates</p>
-                          <p className="text-sm text-slate-600">{mockAnalysis.entities.dates.length} dates found</p>
+                          <p className="text-sm text-slate-600">{file.analysis.dates.length} dates found</p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-3 p-3 bg-orange-50 rounded-lg">
@@ -210,7 +270,7 @@ export default function AnalysisPage() {
                         <div>
                           <p className="font-medium text-slate-800">Obligations</p>
                           <p className="text-sm text-slate-600">
-                            {mockAnalysis.entities.obligations.length} key obligations
+                            {file.analysis.obligations.length} key obligations
                           </p>
                         </div>
                       </div>
@@ -227,7 +287,7 @@ export default function AnalysisPage() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {mockAnalysis.riskAreas.map((risk, index) => (
+                      {file.analysis.riskyClauses.map((risk, index) => (
                         <div key={index} className="border rounded-lg p-4">
                           <div className="flex items-start justify-between mb-2">
                             <div className="flex items-center space-x-2">
@@ -254,10 +314,10 @@ export default function AnalysisPage() {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {mockAnalysis.entities.parties.map((party, index) => (
+                        {file.analysis.parties.map((party, index) => (
                           <li key={index} className="flex items-center space-x-2">
                             <Users className="w-4 h-4 text-blue-600" />
-                            <span>{party}</span>
+                            <span>{party.name} ({party.role})</span>
                           </li>
                         ))}
                       </ul>
@@ -270,10 +330,15 @@ export default function AnalysisPage() {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {mockAnalysis.entities.amounts.map((amount, index) => (
-                          <li key={index} className="flex items-center space-x-2">
-                            <DollarSign className="w-4 h-4 text-green-600" />
-                            <span>{amount}</span>
+                        {file.analysis.financialTerms.map((term, index) => (
+                          <li key={index} className="flex flex-col space-y-1 border p-2 rounded">
+                            <div className="flex items-center space-x-2">
+                              <DollarSign className="w-4 h-4 text-green-600" />
+                              <span className="font-medium">{term.amount}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 pl-6">
+                              {term.desc} — {new Date(term.date).toLocaleDateString()}
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -286,13 +351,17 @@ export default function AnalysisPage() {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {mockAnalysis.entities.dates.map((date, index) => (
-                          <li key={index} className="flex items-center space-x-2">
-                            <Calendar className="w-4 h-4 text-purple-600" />
-                            <span>{new Date(date).toLocaleDateString()}</span>
+                        {file.analysis.dates.map((item, index) => (
+                          <li key={index} className="flex flex-col space-y-1 border p-2 rounded">
+                            <div className="flex items-center space-x-2">
+                              <Calendar className="w-4 h-4 text-purple-600" />
+                              <span className="font-medium">{new Date(item.date).toLocaleDateString()}</span>
+                            </div>
+                            <div className="text-sm text-gray-600 pl-6">{item.desc}</div>
                           </li>
                         ))}
                       </ul>
+
                     </CardContent>
                   </Card>
 
@@ -302,13 +371,18 @@ export default function AnalysisPage() {
                     </CardHeader>
                     <CardContent>
                       <ul className="space-y-2">
-                        {mockAnalysis.entities.obligations.map((obligation, index) => (
-                          <li key={index} className="flex items-start space-x-2">
-                            <Shield className="w-4 h-4 text-orange-600 mt-0.5" />
-                            <span className="text-sm">{obligation}</span>
+                        {file.analysis.obligations.map((obligation, index) => (
+                          <li key={index} className="flex flex-col space-y-1">
+                            <div className="flex items-center space-x-2">
+                              <Shield className="w-4 h-4 text-orange-600" />
+                              <span className="text-sm font-medium text-slate-800">{obligation.name}</span>
+                            </div>
+                            <p className="text-sm text-slate-600 ml-6">{obligation.role}</p>
                           </li>
                         ))}
                       </ul>
+
+
                     </CardContent>
                   </Card>
                 </div>
@@ -402,6 +476,7 @@ export default function AnalysisPage() {
                 </CardTitle>
                 <CardDescription>Get instant answers about your document</CardDescription>
               </CardHeader>
+
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <Textarea
@@ -414,12 +489,12 @@ export default function AnalysisPage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      onClick={() => setIsListening(!isListening)}
+                      onClick={() => toggleListening()}
                       className={isListening ? "bg-red-50 border-red-200" : ""}
                     >
                       <Mic className={`w-4 h-4 ${isListening ? "text-red-600" : ""}`} />
                     </Button>
-                    <Button size="sm" className="flex-1">
+                    <Button onClick={() => askQuestion()} size="sm" className="flex-1">
                       <Send className="w-4 h-4 mr-2" />
                       Ask
                     </Button>
@@ -445,8 +520,17 @@ export default function AnalysisPage() {
                     ))}
                   </div>
                 </div>
+
+                {/* 🟢 Answer Section */}
+                {answer && (
+                  <div className="p-3 border rounded-lg bg-slate-50 space-y-1">
+                    <p className="text-sm font-semibold text-slate-700">Answer:</p>
+                    <p className="text-sm text-slate-800">{answer}</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
+
 
             {/* Document Actions */}
             <Card>
