@@ -9,6 +9,7 @@ import TemplatesPage from "./pages/TemplatesPage"
 import UploadPage from "./pages/UploadPage"
 import AnalysisPage from "./pages/AnalysisPage"
 import DashboardPage from "./pages/DashboardPage"
+import ComparisonPage from "./pages/ComparisonPage"
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
       <Route path="/upload" element={<UploadPage />} />
       <Route path="/analysis/:id" element={<AnalysisPage />} />
       <Route path="/dashboard" element={<DashboardPage />} />
+      <Route path="/compare" element={<ComparisonPage />} />
     </Routes>
   )
 }

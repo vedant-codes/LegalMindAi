@@ -18,6 +18,7 @@ import {
   Calendar,
   Brain,
   ArrowLeft,
+  GitCompare,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -282,9 +283,21 @@ export default function DashboardPage() {
                         )}
                         <div className="flex items-center space-x-2">
                           {doc.status === "analyzed" ? (
-                            <Link to={`/analysis/${doc.id}`}>
-                              <Button size="sm">View Analysis</Button>
-                            </Link>
+                            <>
+                              <Link to={`/analysis/${doc.id}`}>
+                                <Button size="sm">View Analysis</Button>
+                              </Link>
+                              <Link to={`/compare?original=${doc.id}`}>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                >
+                                  <GitCompare className="w-4 h-4 mr-2" />
+                                  Compare
+                                </Button>
+                              </Link>
+                            </>
                           ) : (
                             <Button size="sm" variant="outline" disabled>
                               <Clock className="w-4 h-4 mr-2" />

@@ -24,6 +24,7 @@ import {
   Send,
   Brain,
   ArrowLeft,
+  GitCompare,
 } from "lucide-react"
 import { Link, useParams } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -368,12 +369,21 @@ export default function AnalysisPage() {
                     <CardTitle>Document Comparison</CardTitle>
                     <CardDescription>Compare this document with another version</CardDescription>
                   </CardHeader>
-                  <CardContent>
+                  <CardContent className="space-y-4">
                     <div className="border-2 border-dashed border-slate-300 rounded-lg p-8 text-center">
                       <FileText className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-medium text-slate-800 mb-2">Upload Comparison Document</h3>
+                      <h3 className="text-lg font-medium text-slate-800 mb-2">Compare Contract Versions</h3>
                       <p className="text-slate-600 mb-4">Upload another version to see what changed</p>
-                      <Button variant="outline">Choose File</Button>
+                      <div className="space-y-2">
+                        <Button variant="outline">Choose File to Compare</Button>
+                        <div className="text-sm text-slate-500">or</div>
+                        <Link to="/compare">
+                          <Button className="w-full">
+                            <GitCompare className="w-4 h-4 mr-2" />
+                            Use Advanced Comparison Tool
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
