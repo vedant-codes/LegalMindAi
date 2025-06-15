@@ -9,27 +9,112 @@ import { Upload, FileText, X, CheckCircle, AlertCircle, Brain, ArrowLeft } from 
 import { useDropzone } from "react-dropzone"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
+import axios from 'axios'
 
 export default function UploadPage() {
+ 
+
+const uploadAndAnalyzeFile = async (file, fileId) => {
+  const formData = new FormData()
+  formData.append("document", file)
+
+  try {
+    const response = await axios.post("http://localhost:3000/api/upload", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    })
+
+    const serverFileId = response.data.fileId // use a local variable
+
+    pollFileStatus(serverFileId, fileId)
+
+    
+  } catch (error) {
+    console.error("Upload failed", error)
+    setFiles((prev) =>
+      prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f))
+    )
+  }
+}
+
+  const pollFileStatus = (fileServerId, fileId) => {
+  let progress = 0;
+  const interval = setInterval(async () => {
+    try {
+      const statusResponse = await axios.get(`http://localhost:3000/api/status/${fileServerId}`);
+      const status = statusResponse.data.status;
+
+      if (status === "completed") {
+        clearInterval(interval);
+
+        const docResponse = await axios.get(`http://localhost:3000/api/document/${fileServerId}`);
+        const extractedText = docResponse.data.extractedText;
+
+        const summaryResponse = await axios.post("http://localhost:3000/api/generate-summary", {
+          prompt: extractedText,
+        });
+        console.log(summaryResponse.data)
+
+        const type = summaryResponse.data.type || "Summary"; // or adjust based on your API
+
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  status: "completed",
+                  progress: 100,
+                  type: type,
+                  analysis: summaryResponse.data.result,
+                }
+              : f
+          )
+        );
+      } else if (status === "processing") {
+        // Animate progress while processing
+        progress = Math.min(progress + Math.random() * 20, 95);
+        setFiles((prev) =>
+          prev.map((f) =>
+            f.id === fileId
+              ? {
+                  ...f,
+                  progress: Math.floor(progress),
+                  status: "processing",
+                }
+              : f
+          )
+        );
+      }
+    } catch (err) {
+      console.error("Polling failed", err);
+      clearInterval(interval);
+      setFiles((prev) =>
+        prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f))
+      );
+    }
+  }, 3000);
+};
+
   const [files, setFiles] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
 
   const onDrop = useCallback((acceptedFiles) => {
-    const newFiles = acceptedFiles.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      name: file.name,
-      size: file.size,
-      status: "uploading",
-      progress: 0,
-    }))
+    console.log("files dropped")
+  const newFiles = acceptedFiles.map((file) => ({
+    id: Math.random().toString(36).substr(2, 9),
+    name: file.name,
+    size: file.size,
+    status: "uploading",
+    progress: 0,
+    file, // keep actual file here
+  }))
 
-    setFiles((prev) => [...prev, ...newFiles])
+  setFiles((prev) => [...prev, ...newFiles])
 
-    // Simulate upload and processing
-    newFiles.forEach((file) => {
-      simulateFileProcessing(file.id)
-    })
-  }, [])
+  newFiles.forEach((file) => {
+    uploadAndAnalyzeFile(file.file, file.id)
+  })
+}, [])
+
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -239,7 +324,10 @@ export default function UploadPage() {
                         </p>
                       </div>
                     </div>
-                    <Link to={`/analysis/${file.id}`}>
+                    <Link
+                      to={`/analysis/${file.id}`}
+                      state={{ file }}
+                    >
                       <Button size="sm">View Analysis</Button>
                     </Link>
                   </div>
