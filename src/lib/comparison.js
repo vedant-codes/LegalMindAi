@@ -518,7 +518,7 @@ export function createSideBySideComparison(originalText, revisedText, changes) {
   return comparisonData
 }
 
-// Enhanced PDF report generation (keeping the existing structure but with better formatting)
+// Enhanced PDF report generation with better formatting and alignment
 export async function generateComparisonReport(comparisonData, originalFileName, revisedFileName) {
   const pdf = new jsPDF()
   const pageWidth = pdf.internal.pageSize.width
@@ -526,271 +526,511 @@ export async function generateComparisonReport(comparisonData, originalFileName,
   const margin = 20
   let yPosition = margin
 
-  // Helper function to add text with word wrapping
-  function addText(text, x, y, maxWidth, fontSize = 12) {
-    pdf.setFontSize(fontSize)
-    const lines = pdf.splitTextToSize(text, maxWidth)
-    pdf.text(lines, x, y)
-    return y + lines.length * fontSize * 0.4
+  // Color definitions
+  const colors = {
+    primary: [41, 98, 255], // Blue
+    success: [34, 197, 94], // Green
+    danger: [239, 68, 68], // Red
+    warning: [245, 158, 11], // Yellow
+    secondary: [107, 114, 128], // Gray
+    dark: [31, 41, 55], // Dark gray
+    light: [249, 250, 251], // Light gray
   }
 
-  // Helper function to add a table
-  function addTable(headers, rows, startY) {
+  // Helper function to set color
+  function setColor(colorArray) {
+    pdf.setTextColor(colorArray[0], colorArray[1], colorArray[2])
+  }
+
+  // Helper function to set fill color
+  function setFillColor(colorArray) {
+    pdf.setFillColor(colorArray[0], colorArray[1], colorArray[2])
+  }
+
+  // Helper function to add text with word wrapping and better formatting
+  function addText(text, x, y, maxWidth, fontSize = 12, color = colors.dark, isBold = false) {
+    pdf.setFontSize(fontSize)
+    pdf.setFont(undefined, isBold ? "bold" : "normal")
+    setColor(color)
+    const lines = pdf.splitTextToSize(text, maxWidth)
+    pdf.text(lines, x, y)
+    return y + lines.length * (fontSize * 0.4) + 2
+  }
+
+  // Helper function to add a styled header
+  function addHeader(text, level = 1, y = null) {
+    if (y !== null) yPosition = y
+
+    checkNewPage(30)
+
+    const fontSize = level === 1 ? 18 : level === 2 ? 16 : 14
+    const color = level === 1 ? colors.primary : level === 2 ? colors.dark : colors.secondary
+
+    // Add some spacing before header
+    yPosition += level === 1 ? 15 : 10
+
+    yPosition = addText(text, margin, yPosition, pageWidth - 2 * margin, fontSize, color, true)
+
+    // Add underline for main headers
+    if (level <= 2) {
+      setColor(level === 1 ? colors.primary : colors.secondary)
+      pdf.setLineWidth(level === 1 ? 1 : 0.5)
+      pdf.line(margin, yPosition, pageWidth - margin, yPosition)
+      yPosition += 8
+    } else {
+      yPosition += 5
+    }
+
+    return yPosition
+  }
+
+  // Helper function to add bullet points
+  function addBulletPoint(text, x, y, maxWidth, fontSize = 11) {
+    setColor(colors.dark)
+    pdf.setFontSize(fontSize)
+    pdf.setFont(undefined, "normal")
+
+    // Add bullet
+    pdf.text("•", x, y)
+
+    // Add text with proper indentation
+    const lines = pdf.splitTextToSize(text, maxWidth - 10)
+    pdf.text(lines, x + 8, y)
+
+    return y + lines.length * (fontSize * 0.4) + 3
+  }
+
+  // Enhanced table function with better styling
+  function addStyledTable(headers, rows, startY, options = {}) {
+    const {
+      headerColor = colors.primary,
+      headerBgColor = colors.light,
+      alternateRows = true,
+      borderColor = colors.secondary,
+      fontSize = 10,
+    } = options
+
     const colWidth = (pageWidth - 2 * margin) / headers.length
     let currentY = startY
 
+    // Table header background
+    setFillColor(headerBgColor)
+    pdf.rect(margin, currentY - 5, pageWidth - 2 * margin, 15, "F")
+
+    // Table header border
+    setColor(borderColor)
+    pdf.setLineWidth(0.5)
+    pdf.rect(margin, currentY - 5, pageWidth - 2 * margin, 15)
+
     // Add headers
-    pdf.setFontSize(10)
+    pdf.setFontSize(fontSize + 1)
     pdf.setFont(undefined, "bold")
+    setColor(headerColor)
     headers.forEach((header, index) => {
-      pdf.text(header, margin + index * colWidth + 2, currentY)
+      const cellX = margin + index * colWidth + 5
+      pdf.text(header, cellX, currentY + 5)
+
+      // Vertical lines for header
+      if (index > 0) {
+        pdf.line(margin + index * colWidth, currentY - 5, margin + index * colWidth, currentY + 10)
+      }
     })
 
-    // Add header line
-    pdf.line(margin, currentY + 2, pageWidth - margin, currentY + 2)
-    currentY += 8
+    currentY += 15
 
     // Add rows
     pdf.setFont(undefined, "normal")
+    pdf.setFontSize(fontSize)
+    setColor(colors.dark)
+
     rows.forEach((row, rowIndex) => {
-      if (currentY > pageHeight - 40) {
+      if (currentY > pageHeight - 50) {
         pdf.addPage()
-        currentY = margin
+        currentY = margin + 20
 
         // Re-add headers on new page
+        setFillColor(headerBgColor)
+        pdf.rect(margin, currentY - 5, pageWidth - 2 * margin, 15, "F")
+
+        setColor(borderColor)
+        pdf.rect(margin, currentY - 5, pageWidth - 2 * margin, 15)
+
+        pdf.setFontSize(fontSize + 1)
         pdf.setFont(undefined, "bold")
+        setColor(headerColor)
         headers.forEach((header, index) => {
-          pdf.text(header, margin + index * colWidth + 2, currentY)
+          const cellX = margin + index * colWidth + 5
+          pdf.text(header, cellX, currentY + 5)
+          if (index > 0) {
+            pdf.line(margin + index * colWidth, currentY - 5, margin + index * colWidth, currentY + 10)
+          }
         })
-        pdf.line(margin, currentY + 2, pageWidth - margin, currentY + 2)
-        currentY += 8
+        currentY += 15
         pdf.setFont(undefined, "normal")
+        pdf.setFontSize(fontSize)
+        setColor(colors.dark)
       }
 
-      row.forEach((cell, cellIndex) => {
-        const cellText = pdf.splitTextToSize(cell, colWidth - 4)
-        pdf.text(cellText, margin + cellIndex * colWidth + 2, currentY)
+      // Alternate row background
+      if (alternateRows && rowIndex % 2 === 1) {
+        setFillColor([248, 250, 252]) // Very light gray
+        pdf.rect(margin, currentY - 2, pageWidth - 2 * margin, 18, "F")
+      }
+
+      // Calculate row height based on content
+      let maxRowHeight = 12
+      const cellContents = row.map((cell, cellIndex) => {
+        const cellWidth = colWidth - 10
+        const lines = pdf.splitTextToSize(cell, cellWidth)
+        maxRowHeight = Math.max(maxRowHeight, lines.length * (fontSize * 0.4) + 8)
+        return lines
       })
 
-      currentY += 12
+      // Add cell content
+      row.forEach((cell, cellIndex) => {
+        const cellX = margin + cellIndex * colWidth + 5
+        const lines = cellContents[cellIndex]
 
-      // Add row separator
-      if (rowIndex < rows.length - 1) {
-        pdf.line(margin, currentY - 2, pageWidth - margin, currentY - 2)
-      }
+        // Add text
+        pdf.text(lines, cellX, currentY + 8)
+
+        // Vertical lines
+        if (cellIndex > 0) {
+          setColor(borderColor)
+          pdf.line(margin + cellIndex * colWidth, currentY - 2, margin + cellIndex * colWidth, currentY + maxRowHeight)
+        }
+      })
+
+      // Horizontal line after row
+      setColor(borderColor)
+      pdf.line(margin, currentY + maxRowHeight, pageWidth - margin, currentY + maxRowHeight)
+
+      currentY += maxRowHeight + 2
     })
 
+    // Final border
+    setColor(borderColor)
+    pdf.rect(margin, startY - 5, pageWidth - 2 * margin, currentY - startY + 5)
+
     return currentY + 10
+  }
+
+  // Helper function to add a colored info box
+  function addInfoBox(title, content, color = colors.primary, bgColor = null) {
+    checkNewPage(40)
+
+    if (!bgColor) {
+      bgColor = [color[0], color[1], color[2], 0.1] // Light version of the color
+    }
+
+    // Background
+    setFillColor([245, 247, 250])
+    pdf.roundedRect(margin, yPosition, pageWidth - 2 * margin, 35, 3, 3, "F")
+
+    // Left border
+    setFillColor(color)
+    pdf.rect(margin, yPosition, 4, 35, "F")
+
+    // Title
+    yPosition = addText(title, margin + 15, yPosition + 10, pageWidth - 2 * margin - 20, 12, color, true)
+
+    // Content
+    yPosition = addText(content, margin + 15, yPosition + 2, pageWidth - 2 * margin - 20, 10, colors.dark, false)
+
+    yPosition += 15
+    return yPosition
   }
 
   // Helper function to check if we need a new page
   function checkNewPage(requiredHeight) {
     if (yPosition + requiredHeight > pageHeight - margin) {
       pdf.addPage()
-      yPosition = margin
+      yPosition = margin + 10
     }
   }
 
-  // Title Page
-  pdf.setFontSize(24)
+  // Helper function to add statistics cards
+  function addStatCard(title, value, color, x, y, width = 80, height = 40) {
+    // Card background
+    setFillColor([255, 255, 255])
+    pdf.roundedRect(x, y, width, height, 2, 2, "F")
+
+    // Card border
+    setColor([229, 231, 235])
+    pdf.setLineWidth(0.5)
+    pdf.roundedRect(x, y, width, height, 2, 2)
+
+    // Value
+    pdf.setFontSize(18)
+    pdf.setFont(undefined, "bold")
+    setColor(color)
+    pdf.text(value.toString(), x + width / 2, y + 20, { align: "center" })
+
+    // Title
+    pdf.setFontSize(9)
+    pdf.setFont(undefined, "normal")
+    setColor(colors.secondary)
+    pdf.text(title, x + width / 2, y + 32, { align: "center" })
+  }
+
+  // ==================== START REPORT GENERATION ====================
+
+  // TITLE PAGE
+  setFillColor(colors.primary)
+  pdf.rect(0, 0, pageWidth, 60, "F")
+
+  pdf.setFontSize(28)
   pdf.setFont(undefined, "bold")
-  pdf.text("Contract Comparison Report", pageWidth / 2, 40, { align: "center" })
+  setColor([255, 255, 255])
+  pdf.text("CONTRACT COMPARISON REPORT", pageWidth / 2, 35, { align: "center" })
 
-  pdf.setFontSize(14)
-  pdf.setFont(undefined, "normal")
-  yPosition = 60
-  yPosition = addText(`Original Document: ${originalFileName}`, margin, yPosition, pageWidth - 2 * margin)
-  yPosition = addText(`Revised Document: ${revisedFileName}`, margin, yPosition + 10, pageWidth - 2 * margin)
-  yPosition = addText(`Generated: ${new Date().toLocaleString()}`, margin, yPosition + 10, pageWidth - 2 * margin)
+  yPosition = 80
 
-  // Executive Summary
-  checkNewPage(60)
-  yPosition += 20
-  pdf.setFontSize(18)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("Executive Summary", margin, yPosition, pageWidth - 2 * margin, 18)
+  // Document info box
+  addInfoBox(
+    "Document Information",
+    `Original: ${originalFileName}\nRevised: ${revisedFileName}\nGenerated: ${new Date().toLocaleString()}`,
+    colors.primary,
+  )
 
-  pdf.setFontSize(12)
-  pdf.setFont(undefined, "normal")
-  yPosition += 10
-  yPosition = addText(comparisonData.insights.summary.description, margin, yPosition, pageWidth - 2 * margin)
+  // EXECUTIVE SUMMARY
+  addHeader("Executive Summary", 1)
+  yPosition = addText(
+    comparisonData.insights.summary.description,
+    margin,
+    yPosition,
+    pageWidth - 2 * margin,
+    12,
+    colors.dark,
+  )
 
-  // Summary Statistics Table
+  // SUMMARY STATISTICS CARDS
+  addHeader("Summary Statistics", 2)
+
+  const cardWidth = (pageWidth - 2 * margin - 30) / 4
+  const cardY = yPosition + 10
+
+  addStatCard("Total Changes", comparisonData.summary.totalChanges, colors.primary, margin, cardY, cardWidth)
+  addStatCard("Added", comparisonData.summary.added, colors.success, margin + cardWidth + 10, cardY, cardWidth)
+  addStatCard("Removed", comparisonData.summary.removed, colors.danger, margin + 2 * (cardWidth + 10), cardY, cardWidth)
+  addStatCard(
+    "Modified",
+    comparisonData.summary.modified,
+    colors.warning,
+    margin + 3 * (cardWidth + 10),
+    cardY,
+    cardWidth,
+  )
+
+  yPosition = cardY + 50
+
+  // RISK ASSESSMENT
+  addHeader("Risk Assessment", 2)
+
+  const riskLevel = comparisonData.insights.riskAssessment.level
+  const riskColor = riskLevel === "high" ? colors.danger : riskLevel === "medium" ? colors.warning : colors.success
+
+  addInfoBox(
+    `Risk Level: ${riskLevel.toUpperCase()} (Score: ${comparisonData.insights.riskAssessment.score}/100)`,
+    `Primary Concern: ${comparisonData.insights.impactAnalysis.primaryConcern}`,
+    riskColor,
+  )
+
+  if (comparisonData.insights.riskAssessment.factors.length > 0) {
+    yPosition = addText("Risk Factors:", margin, yPosition, pageWidth - 2 * margin, 12, colors.dark, true)
+    yPosition += 5
+
+    comparisonData.insights.riskAssessment.factors.forEach((factor) => {
+      yPosition = addBulletPoint(factor, margin + 10, yPosition, pageWidth - 2 * margin - 20)
+    })
+  }
+
+  // KEY CHANGES BY CATEGORY
   checkNewPage(100)
-  yPosition += 20
-  pdf.setFontSize(16)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("Summary Statistics", margin, yPosition, pageWidth - 2 * margin, 16)
-  yPosition += 10
+  addHeader("Key Changes by Category", 2)
 
-  const summaryHeaders = ["Metric", "Count", "Percentage"]
-  const total = Math.max(comparisonData.summary.totalChanges, 1) // Avoid division by zero
-  const summaryRows = [
-    ["Total Changes", comparisonData.summary.totalChanges.toString(), "100%"],
-    [
-      "Additions",
-      comparisonData.summary.added.toString(),
-      `${Math.round((comparisonData.summary.added / total) * 100)}%`,
-    ],
-    [
-      "Removals",
-      comparisonData.summary.removed.toString(),
-      `${Math.round((comparisonData.summary.removed / total) * 100)}%`,
-    ],
-    [
-      "Modifications",
-      comparisonData.summary.modified.toString(),
-      `${Math.round((comparisonData.summary.modified / total) * 100)}%`,
-    ],
-  ]
-
-  yPosition = addTable(summaryHeaders, summaryRows, yPosition)
-
-  // Key Changes Table
-  checkNewPage(150)
-  yPosition += 20
-  pdf.setFontSize(16)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("Key Changes by Category", margin, yPosition, pageWidth - 2 * margin, 16)
-  yPosition += 10
-
-  const keyChangeHeaders = ["Category", "Type", "Line", "Description"]
+  const keyChangeHeaders = ["Category", "Type", "Priority", "Description"]
   const keyChangeRows = []
 
   Object.entries(comparisonData.keyChanges).forEach(([category, changes]) => {
-    changes.slice(0, 20).forEach((change) => {
+    changes.slice(0, 15).forEach((change) => {
       const description =
         change.type === "modified"
-          ? `${change.oldContent.substring(0, 40)}... → ${change.newContent.substring(0, 40)}...`
-          : change.content.substring(0, 80) + (change.content.length > 80 ? "..." : "")
+          ? `${change.oldContent.substring(0, 50)}... → ${change.newContent.substring(0, 50)}...`
+          : change.content.substring(0, 100) + (change.content.length > 100 ? "..." : "")
 
       keyChangeRows.push([
         category.replace(/_/g, " ").toUpperCase(),
         change.type.toUpperCase(),
-        change.lineNumber.toString(),
+        change.importance || "LOW",
         description,
       ])
     })
   })
 
   if (keyChangeRows.length > 0) {
-    yPosition = addTable(keyChangeHeaders, keyChangeRows, yPosition)
+    yPosition = addStyledTable(keyChangeHeaders, keyChangeRows, yPosition, {
+      headerColor: colors.primary,
+      fontSize: 9,
+    })
+  } else {
+    yPosition = addText("No key changes detected.", margin, yPosition, pageWidth - 2 * margin, 11, colors.secondary)
   }
 
-  // All Changes Table
-  checkNewPage(150)
-  yPosition += 20
-  pdf.setFontSize(16)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("All Changes", margin, yPosition, pageWidth - 2 * margin, 16)
-  yPosition += 10
+  // ALL CHANGES SUMMARY
+  checkNewPage(100)
+  addHeader("All Changes Summary", 2)
 
-  const allChangeHeaders = ["#", "Type", "Line", "Content"]
-  const allChangeRows = comparisonData.changes.slice(0, 50).map((change, index) => {
+  const allChangeHeaders = ["#", "Type", "Line", "Content Preview"]
+  const allChangeRows = comparisonData.changes.slice(0, 30).map((change, index) => {
     const content =
       change.type === "modified"
-        ? `OLD: ${change.oldContent.substring(0, 60)}... NEW: ${change.newContent.substring(0, 60)}...`
-        : change.content.substring(0, 100) + (change.content.length > 100 ? "..." : "")
+        ? `OLD: ${change.oldContent.substring(0, 40)}... NEW: ${change.newContent.substring(0, 40)}...`
+        : change.content.substring(0, 80) + (change.content.length > 80 ? "..." : "")
 
     return [(index + 1).toString(), change.type.toUpperCase(), change.lineNumber.toString(), content]
   })
 
   if (allChangeRows.length > 0) {
-    yPosition = addTable(allChangeHeaders, allChangeRows, yPosition)
-  }
-
-  // Side-by-Side Comparison Points
-  const sideBySideData = createSideBySideComparison(
-    comparisonData.originalText,
-    comparisonData.revisedText,
-    comparisonData.changes,
-  )
-
-  checkNewPage(150)
-  yPosition += 20
-  pdf.setFontSize(16)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("Side-by-Side Comparison", margin, yPosition, pageWidth - 2 * margin, 16)
-  yPosition += 10
-
-  const sideByHeaders = ["Point", "Original", "Revised", "Status"]
-  const sideByRows = sideBySideData
-    .slice(0, 30)
-    .map((item) => [
-      item.index.toString(),
-      item.original ? item.original.content.substring(0, 50) + (item.original.content.length > 50 ? "..." : "") : "N/A",
-      item.revised ? item.revised.content.substring(0, 50) + (item.revised.content.length > 50 ? "..." : "") : "N/A",
-      item.status.toUpperCase(),
-    ])
-
-  if (sideByRows.length > 0) {
-    yPosition = addTable(sideByHeaders, sideByRows, yPosition)
-  }
-
-  // Risk Assessment and Recommendations (keep existing code)
-  checkNewPage(80)
-  yPosition += 15
-  pdf.setFontSize(16)
-  pdf.setFont(undefined, "bold")
-  yPosition = addText("Risk Assessment", margin, yPosition, pageWidth - 2 * margin, 16)
-
-  pdf.setFontSize(12)
-  pdf.setFont(undefined, "normal")
-  yPosition += 10
-  yPosition = addText(
-    `Risk Level: ${comparisonData.insights.riskAssessment.level.toUpperCase()}`,
-    margin,
-    yPosition,
-    pageWidth - 2 * margin,
-  )
-  yPosition = addText(
-    `Risk Score: ${comparisonData.insights.riskAssessment.score}/100`,
-    margin,
-    yPosition + 5,
-    pageWidth - 2 * margin,
-  )
-
-  if (comparisonData.insights.riskAssessment.factors.length > 0) {
-    yPosition += 10
-    yPosition = addText("Risk Factors:", margin, yPosition, pageWidth - 2 * margin)
-    comparisonData.insights.riskAssessment.factors.forEach((factor) => {
-      yPosition = addText(`• ${factor}`, margin + 10, yPosition + 5, pageWidth - 2 * margin - 10)
+    yPosition = addStyledTable(allChangeHeaders, allChangeRows, yPosition, {
+      headerColor: colors.dark,
+      fontSize: 9,
+      alternateRows: true,
     })
   }
 
-  // Recommendations
-  if (comparisonData.insights.recommendations.length > 0) {
-    checkNewPage(100)
-    yPosition += 20
-    pdf.setFontSize(16)
-    pdf.setFont(undefined, "bold")
-    yPosition = addText("Recommendations", margin, yPosition, pageWidth - 2 * margin, 16)
+  // DETAILED CHANGES
+  checkNewPage(100)
+  addHeader("Detailed Changes Analysis", 2)
 
-    comparisonData.insights.recommendations.forEach((rec) => {
-      checkNewPage(40)
-      yPosition += 15
-      pdf.setFontSize(12)
-      pdf.setFont(undefined, "bold")
+  comparisonData.changes.slice(0, 20).forEach((change, index) => {
+    checkNewPage(60)
+
+    // Change header
+    addHeader(`Change #${index + 1} - ${change.type.toUpperCase()} (Line ${change.lineNumber})`, 3)
+
+    if (change.type === "modified") {
+      // Original content
+      yPosition = addText("Original Content:", margin, yPosition, pageWidth - 2 * margin, 11, colors.danger, true)
+      yPosition += 3
+      setFillColor([254, 242, 242]) // Light red background
+      pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 20, "F")
+      yPosition = addText(change.oldContent, margin + 5, yPosition + 8, pageWidth - 2 * margin - 10, 10, colors.dark)
+      yPosition += 8
+
+      // New content
+      yPosition = addText("Revised Content:", margin, yPosition, pageWidth - 2 * margin, 11, colors.success, true)
+      yPosition += 3
+      setFillColor([240, 253, 244]) // Light green background
+      pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 20, "F")
+      yPosition = addText(change.newContent, margin + 5, yPosition + 8, pageWidth - 2 * margin - 10, 10, colors.dark)
+      yPosition += 8
+
+      if (change.similarity) {
+        yPosition = addText(
+          `Similarity: ${Math.round(change.similarity * 100)}%`,
+          margin,
+          yPosition,
+          pageWidth - 2 * margin,
+          9,
+          colors.secondary,
+        )
+      }
+    } else {
+      const bgColor = change.type === "added" ? [240, 253, 244] : [254, 242, 242]
+      const textColor = change.type === "added" ? colors.success : colors.danger
+
       yPosition = addText(
-        `${rec.category} (${rec.priority.toUpperCase()} Priority)`,
+        `${change.type === "added" ? "Added" : "Removed"} Content:`,
         margin,
         yPosition,
         pageWidth - 2 * margin,
-        12,
+        11,
+        textColor,
+        true,
       )
+      yPosition += 3
+      setFillColor(bgColor)
+      pdf.rect(margin, yPosition - 2, pageWidth - 2 * margin, 20, "F")
+      yPosition = addText(change.content, margin + 5, yPosition + 8, pageWidth - 2 * margin - 10, 10, colors.dark)
+      yPosition += 8
+    }
 
-      pdf.setFont(undefined, "normal")
-      yPosition = addText(rec.recommendation, margin, yPosition + 5, pageWidth - 2 * margin)
+    if (change.confidence) {
+      yPosition = addText(
+        `Confidence: ${Math.round(change.confidence * 100)}%`,
+        margin,
+        yPosition,
+        pageWidth - 2 * margin,
+        9,
+        colors.secondary,
+      )
+    }
+
+    yPosition += 10
+  })
+
+  // RECOMMENDATIONS
+  if (comparisonData.insights.recommendations.length > 0) {
+    checkNewPage(80)
+    addHeader("Recommendations", 2)
+
+    comparisonData.insights.recommendations.forEach((rec, index) => {
+      checkNewPage(50)
+
+      const priorityColor =
+        rec.priority === "high" ? colors.danger : rec.priority === "medium" ? colors.warning : colors.success
+
+      addInfoBox(`${rec.category} (${rec.priority.toUpperCase()} Priority)`, rec.recommendation, priorityColor)
     })
   }
 
-  // Footer
+  // IMPACT ANALYSIS
+  checkNewPage(80)
+  addHeader("Impact Analysis", 2)
+
+  const impacts = [
+    { name: "Financial Impact", score: comparisonData.insights.impactAnalysis.scores.financial },
+    { name: "Legal Impact", score: comparisonData.insights.impactAnalysis.scores.legal },
+    { name: "Operational Impact", score: comparisonData.insights.impactAnalysis.scores.operational },
+    { name: "Timeline Impact", score: comparisonData.insights.impactAnalysis.scores.timeline },
+  ]
+
+  impacts.forEach((impact) => {
+    const barWidth = (impact.score / 100) * (pageWidth - 2 * margin - 100)
+    const barColor = impact.score > 70 ? colors.danger : impact.score > 40 ? colors.warning : colors.success
+
+    yPosition = addText(`${impact.name}:`, margin, yPosition, 80, 11, colors.dark, true)
+
+    // Progress bar background
+    setFillColor([229, 231, 235])
+    pdf.rect(margin + 85, yPosition - 8, pageWidth - 2 * margin - 100, 8, "F")
+
+    // Progress bar fill
+    setFillColor(barColor)
+    pdf.rect(margin + 85, yPosition - 8, barWidth, 8, "F")
+
+    // Score text
+    yPosition = addText(`${impact.score}/100`, pageWidth - margin - 30, yPosition, 30, 10, colors.dark)
+    yPosition += 8
+  })
+
+  // FOOTER ON ALL PAGES
   const totalPages = pdf.internal.getNumberOfPages()
   for (let i = 1; i <= totalPages; i++) {
     pdf.setPage(i)
+
+    // Footer background
+    setFillColor([248, 250, 252])
+    pdf.rect(0, pageHeight - 20, pageWidth, 20, "F")
+
+    // Footer content
     pdf.setFontSize(8)
-    pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 10, { align: "right" })
-    pdf.text("Generated by LegalMind.AI", margin, pageHeight - 10)
+    pdf.setFont(undefined, "normal")
+    setColor(colors.secondary)
+    pdf.text(`Page ${i} of ${totalPages}`, pageWidth - margin, pageHeight - 8, { align: "right" })
+    pdf.text("Generated by LegalMind.AI", margin, pageHeight - 8)
+    pdf.text(new Date().toLocaleDateString(), pageWidth / 2, pageHeight - 8, { align: "center" })
   }
 
   return pdf

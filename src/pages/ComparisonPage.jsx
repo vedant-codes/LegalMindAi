@@ -23,6 +23,11 @@ import {
   Loader2,
   TrendingUp,
   Shield,
+  Zap,
+  Search,
+  BookOpen,
+  Target,
+  Eye,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
@@ -82,6 +87,7 @@ export default function ComparisonPage() {
   const [comparisonResult, setComparisonResult] = useState(null)
   const [progress, setProgress] = useState(0)
   const [progressMessage, setProgressMessage] = useState("")
+  const [progressStep, setProgressStep] = useState(0)
   const [error, setError] = useState(null)
   const [sideBySideData, setSideBySideData] = useState(null)
 
@@ -161,48 +167,185 @@ export default function ComparisonPage() {
     }
   }
 
+  // Enhanced progress steps with realistic timing
+  const progressSteps = [
+    {
+      id: 1,
+      message: "Initializing AI comparison engine...",
+      icon: <Brain className="w-5 h-5 text-blue-600" />,
+      duration: 2000,
+      progress: 0,
+    },
+    {
+      id: 2,
+      message: "Scanning original document structure...",
+      icon: <Search className="w-5 h-5 text-purple-600" />,
+      duration: 3000,
+      progress: 10,
+    },
+    {
+      id: 3,
+      message: "Extracting text from original document...",
+      icon: <FileText className="w-5 h-5 text-green-600" />,
+      duration: 2500,
+      progress: 18,
+    },
+    {
+      id: 4,
+      message: "Analyzing original document content...",
+      icon: <BookOpen className="w-5 h-5 text-orange-600" />,
+      duration: 2000,
+      progress: 25,
+    },
+    {
+      id: 5,
+      message: "Scanning revised document structure...",
+      icon: <Search className="w-5 h-5 text-purple-600" />,
+      duration: 3000,
+      progress: 35,
+    },
+    {
+      id: 6,
+      message: "Extracting text from revised document...",
+      icon: <FileText className="w-5 h-5 text-green-600" />,
+      duration: 2500,
+      progress: 43,
+    },
+    {
+      id: 7,
+      message: "Analyzing revised document content...",
+      icon: <BookOpen className="w-5 h-5 text-orange-600" />,
+      duration: 2000,
+      progress: 50,
+    },
+    {
+      id: 8,
+      message: "AI is comparing document structures...",
+      icon: <GitCompare className="w-5 h-5 text-blue-600" />,
+      duration: 3500,
+      progress: 55,
+    },
+    {
+      id: 9,
+      message: "Detecting content changes with AI...",
+      icon: <Zap className="w-5 h-5 text-yellow-600" />,
+      duration: 4000,
+      progress: 65,
+    },
+    {
+      id: 10,
+      message: "Analyzing semantic differences...",
+      icon: <Target className="w-5 h-5 text-red-600" />,
+      duration: 3000,
+      progress: 72,
+    },
+    {
+      id: 11,
+      message: "Categorizing legal changes...",
+      icon: <Shield className="w-5 h-5 text-indigo-600" />,
+      duration: 2500,
+      progress: 80,
+    },
+    {
+      id: 12,
+      message: "Generating side-by-side comparison...",
+      icon: <Eye className="w-5 h-5 text-cyan-600" />,
+      duration: 2000,
+      progress: 87,
+    },
+    {
+      id: 13,
+      message: "AI is generating insights & recommendations...",
+      icon: <Brain className="w-5 h-5 text-purple-600" />,
+      duration: 3000,
+      progress: 92,
+    },
+    {
+      id: 14,
+      message: "Calculating risk assessment...",
+      icon: <AlertTriangle className="w-5 h-5 text-orange-600" />,
+      duration: 1500,
+      progress: 96,
+    },
+    {
+      id: 15,
+      message: "Finalizing comparison results...",
+      icon: <CheckCircle className="w-5 h-5 text-green-600" />,
+      duration: 1000,
+      progress: 100,
+    },
+  ]
+
+  const simulateProgress = async (stepIndex = 0) => {
+    if (stepIndex >= progressSteps.length) return
+
+    const step = progressSteps[stepIndex]
+    setProgressStep(stepIndex)
+    setProgressMessage(step.message)
+
+    // Animate progress smoothly
+    const startProgress = stepIndex > 0 ? progressSteps[stepIndex - 1].progress : 0
+    const endProgress = step.progress
+    const animationDuration = step.duration
+    const animationSteps = 50
+    const progressIncrement = (endProgress - startProgress) / animationSteps
+    const timeIncrement = animationDuration / animationSteps
+
+    for (let i = 0; i <= animationSteps; i++) {
+      await new Promise((resolve) => setTimeout(resolve, timeIncrement))
+      setProgress(startProgress + progressIncrement * i)
+    }
+
+    // Move to next step
+    setTimeout(() => {
+      simulateProgress(stepIndex + 1)
+    }, 200)
+  }
+
   const compareDocuments = async () => {
     if (!files.original || !files.revised) return
 
     setIsProcessing(true)
     setProgress(0)
+    setProgressStep(0)
     setError(null)
 
     try {
-      // Step 1: Extract text from original document
-      setProgressMessage("Extracting text from original document...")
-      setProgress(10)
+      // Start the visual progress simulation
+      simulateProgress()
 
-      const originalData = await extractTextFromPDF(files.original.file)
-      setProgress(30)
+      // Wait for the visual progress to complete while doing actual processing
+      await new Promise((resolve) => setTimeout(resolve, 1000)) // Small delay to start
 
-      // Step 2: Extract text from revised document
-      setProgressMessage("Extracting text from revised document...")
-      const revisedData = await extractTextFromPDF(files.revised.file)
-      setProgress(50)
+      // Step 1: Extract text from original document (during steps 2-4)
+      const originalDataPromise = extractTextFromPDF(files.original.file)
 
-      // Step 3: Compare documents
-      setProgressMessage("Analyzing differences...")
+      // Step 2: Extract text from revised document (during steps 5-7)
+      await new Promise((resolve) => setTimeout(resolve, 8000)) // Wait for original document steps
+      const revisedDataPromise = extractTextFromPDF(files.revised.file)
+
+      // Wait for both extractions to complete
+      const [originalData, revisedData] = await Promise.all([originalDataPromise, revisedDataPromise])
+
+      // Step 3: Compare documents (during steps 8-10)
+      await new Promise((resolve) => setTimeout(resolve, 6000)) // Wait for revised document steps
       const comparisonData = compareTexts(originalData.fullText, revisedData.fullText)
-      setProgress(70)
 
-      // Step 4: Extract key changes
-      setProgressMessage("Categorizing changes...")
+      // Step 4: Extract key changes (during step 11)
+      await new Promise((resolve) => setTimeout(resolve, 4000)) // Wait for comparison steps
       const keyChanges = extractKeyChanges(comparisonData.changes)
-      setProgress(80)
 
-      // Step 5: Create side-by-side comparison
-      setProgressMessage("Creating side-by-side comparison...")
+      // Step 5: Create side-by-side comparison (during step 12)
+      await new Promise((resolve) => setTimeout(resolve, 2500)) // Wait for categorization
       const sideBySide = createSideBySideComparison(originalData.fullText, revisedData.fullText, comparisonData.changes)
       setSideBySideData(sideBySide)
-      setProgress(90)
 
-      // Step 6: Generate insights
-      setProgressMessage("Generating insights...")
+      // Step 6: Generate insights (during steps 13-14)
+      await new Promise((resolve) => setTimeout(resolve, 2000)) // Wait for side-by-side
       const insights = generateInsights(originalData.fullText, revisedData.fullText, comparisonData.changes, keyChanges)
-      setProgress(95)
 
-      setProgressMessage("Finalizing results...")
+      // Step 7: Finalize results (during step 15)
+      await new Promise((resolve) => setTimeout(resolve, 3000)) // Wait for insights
       setComparisonResult({
         originalText: originalData.fullText,
         revisedText: revisedData.fullText,
@@ -221,8 +364,10 @@ export default function ComparisonPage() {
         },
       })
 
-      setProgress(100)
-      setProgressMessage("Comparison complete!")
+      // Wait for final step to complete
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      setProgressMessage("Comparison complete! 🎉")
     } catch (error) {
       console.error("Comparison failed:", error)
       setError(`Comparison failed: ${error.message}`)
@@ -489,7 +634,7 @@ export default function ComparisonPage() {
                 {isProcessing ? (
                   <>
                     <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                    Comparing Documents...
+                    AI is Analyzing...
                   </>
                 ) : (
                   <>
@@ -500,16 +645,69 @@ export default function ComparisonPage() {
               </Button>
             </div>
 
-            {/* Processing Progress */}
+            {/* Enhanced Processing Progress */}
             {isProcessing && (
-              <Card>
-                <CardContent className="p-6">
-                  <div className="text-center mb-4">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-2">Analyzing Documents</h3>
-                    <p className="text-slate-600">{progressMessage}</p>
+              <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-blue-50">
+                <CardContent className="p-8">
+                  <div className="text-center mb-6">
+                    <motion.div
+                      className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full mb-4"
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 2, repeat: Number.POSITIVE_INFINITY, ease: "linear" }}
+                    >
+                      <Brain className="w-8 h-8 text-white" />
+                    </motion.div>
+                    <h3 className="text-xl font-bold text-slate-800 mb-2">AI Document Analysis in Progress</h3>
+                    <p className="text-slate-600 mb-4">
+                      Our advanced AI is carefully analyzing your documents for precise comparison...
+                    </p>
                   </div>
-                  <Progress value={progress} className="mb-2" />
-                  <p className="text-sm text-slate-500 text-center">{progress}% complete</p>
+
+                  {/* Current Step Display */}
+                  <div className="flex items-center justify-center mb-6">
+                    <div className="flex items-center space-x-3 px-4 py-2 bg-white rounded-lg shadow-sm border">
+                      {progressSteps[progressStep]?.icon}
+                      <span className="font-medium text-slate-700">{progressMessage}</span>
+                    </div>
+                  </div>
+
+                  {/* Progress Bar */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-sm font-medium text-slate-700">Progress</span>
+                      <span className="text-sm font-bold text-purple-600">{Math.round(progress)}%</span>
+                    </div>
+                    <Progress value={progress} className="h-3 bg-white" />
+                  </div>
+
+                  {/* Progress Steps Indicator */}
+                  <div className="mt-6 grid grid-cols-3 gap-4 text-xs">
+                    <div className="text-center">
+                      <div className={`h-2 rounded-full mb-2 ${progress >= 25 ? "bg-green-500" : "bg-gray-200"}`}></div>
+                      <span className={`${progress >= 25 ? "text-green-600 font-medium" : "text-gray-500"}`}>
+                        Document Extraction
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <div className={`h-2 rounded-full mb-2 ${progress >= 70 ? "bg-green-500" : "bg-gray-200"}`}></div>
+                      <span className={`${progress >= 70 ? "text-green-600 font-medium" : "text-gray-500"}`}>
+                        AI Comparison
+                      </span>
+                    </div>
+                    <div className="text-center">
+                      <div className={`h-2 rounded-full mb-2 ${progress >= 95 ? "bg-green-500" : "bg-gray-200"}`}></div>
+                      <span className={`${progress >= 95 ? "text-green-600 font-medium" : "text-gray-500"}`}>
+                        Insights Generation
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Estimated Time */}
+                  <div className="mt-6 text-center">
+                    <p className="text-sm text-slate-500">
+                      Estimated time remaining: {Math.max(0, Math.ceil((100 - progress) * 0.5))} seconds
+                    </p>
+                  </div>
                 </CardContent>
               </Card>
             )}
@@ -517,6 +715,14 @@ export default function ComparisonPage() {
         ) : (
           /* Comparison Results */
           <div className="space-y-6">
+            {/* Success Message */}
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center py-4">
+              <div className="inline-flex items-center space-x-2 px-4 py-2 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle className="w-5 h-5 text-green-600" />
+                <span className="text-green-700 font-medium">Comparison completed successfully!</span>
+              </div>
+            </motion.div>
+
             {/* Summary Cards */}
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
@@ -589,6 +795,7 @@ export default function ComparisonPage() {
                   setSideBySideData(null)
                   setProgress(0)
                   setProgressMessage("")
+                  setProgressStep(0)
                 }}
               >
                 Compare New Documents
