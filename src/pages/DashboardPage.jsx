@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -35,44 +35,44 @@ import {
 import { Link } from "react-router-dom"
 
 // Mock data
-const mockDocuments = [
-  {
-    id: "1",
-    name: "Service Agreement - TechCorp.pdf",
-    type: "Service Agreement",
-    status: "analyzed",
-    riskScore: 72,
-    uploadDate: "2024-01-15",
-    size: "2.4 MB",
-  },
-  {
-    id: "2",
-    name: "NDA - StartupXYZ.docx",
-    type: "NDA",
-    status: "processing",
-    riskScore: null,
-    uploadDate: "2024-01-14",
-    size: "1.2 MB",
-  },
-  {
-    id: "3",
-    name: "Employment Contract - Jane Doe.pdf",
-    type: "Employment Contract",
-    status: "analyzed",
-    riskScore: 45,
-    uploadDate: "2024-01-13",
-    size: "3.1 MB",
-  },
-  {
-    id: "4",
-    name: "Licensing Agreement - SoftwareCo.pdf",
-    type: "Licensing Agreement",
-    status: "analyzed",
-    riskScore: 89,
-    uploadDate: "2024-01-12",
-    size: "4.7 MB",
-  },
-]
+// const mockDocuments = [
+//   {
+//     id: "1",
+//     name: "Service Agreement - TechCorp.pdf",
+//     type: "Service Agreement",
+//     status: "analyzed",
+//     riskScore: 72,
+//     uploadDate: "2024-01-15",
+//     size: "2.4 MB",
+//   },
+//   {
+//     id: "2",
+//     name: "NDA - StartupXYZ.docx",
+//     type: "NDA",
+//     status: "processing",
+//     riskScore: null,
+//     uploadDate: "2024-01-14",
+//     size: "1.2 MB",
+//   },
+//   {
+//     id: "3",
+//     name: "Employment Contract - Jane Doe.pdf",
+//     type: "Employment Contract",
+//     status: "analyzed",
+//     riskScore: 45,
+//     uploadDate: "2024-01-13",
+//     size: "3.1 MB",
+//   },
+//   {
+//     id: "4",
+//     name: "Licensing Agreement - SoftwareCo.pdf",
+//     type: "Licensing Agreement",
+//     status: "analyzed",
+//     riskScore: 89,
+//     uploadDate: "2024-01-12",
+//     size: "4.7 MB",
+//   },
+// ]
 
 const mockStats = {
   totalDocuments: 24,
@@ -196,6 +196,13 @@ const complexityColors = {
 }
 
 export default function DashboardPage() {
+  const [documents, setDocuments] = useState([])
+
+  useEffect(() => {
+    const storedDocs = JSON.parse(localStorage.getItem("documents")) || []
+    setDocuments(storedDocs)
+    console.log(storedDocs)
+  }, [])
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -220,13 +227,20 @@ export default function DashboardPage() {
     return "text-green-600"
   }
 
-  const filteredDocuments = mockDocuments.filter((doc) => {
-    const matchesSearch =
-      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      doc.type.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterType === "all" || doc.type.toLowerCase().includes(filterType.toLowerCase())
-    return matchesSearch && matchesFilter
-  })
+ const filteredDocuments = documents.filter((doc) => {
+  const name = doc.name || "";
+  const type = doc.type || "";
+
+  const matchesSearch =
+    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    type.toLowerCase().includes(searchTerm.toLowerCase());
+
+  const matchesFilter =
+    filterType === "all" || type.toLowerCase().includes(filterType.toLowerCase());
+
+  return matchesSearch && matchesFilter;
+});
+
 
   const handleUseTemplate = (template) => {
     setSelectedTemplate(template)
@@ -371,9 +385,9 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((doc) => (
+                  {filteredDocuments.map((file,index) => (
                     <div
-                      key={doc.id}
+                      key={index}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center space-x-4">
@@ -381,33 +395,36 @@ export default function DashboardPage() {
                           <FileText className="w-5 h-5 text-blue-600" />
                         </div>
                         <div>
-                          <h3 className="font-medium text-slate-800">{doc.name}</h3>
+                          <h3 className="font-medium text-slate-800">{file.name}</h3>
                           <div className="flex items-center space-x-4 mt-1">
                             <Badge variant="secondary" className="text-xs">
-                              {doc.type}
+                              {file.type}
                             </Badge>
-                            <Badge className={`text-xs ${getStatusColor(doc.status)}`}>{doc.status}</Badge>
+                            <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
                             <span className="text-xs text-slate-500">
-                              {doc.size} • {new Date(doc.uploadDate).toLocaleDateString()}
+                              {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </div>
                       <div className="flex items-center space-x-4">
-                        {doc.riskScore && (
+                        {file.riskScore && (
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${getRiskColor(doc.riskScore)}`}>
-                              Risk: {doc.riskScore}/100
+                            <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
+                              Risk: {file.riskScore}/100
                             </div>
                           </div>
                         )}
                         <div className="flex items-center space-x-2">
-                          {doc.status === "analyzed" ? (
+                          {file.status === "completed" ? (
                             <>
-                              <Link to={`/analysis/${doc.id}`}>
-                                <Button size="sm">View Analysis</Button>
-                              </Link>
-                              <Link to={`/compare?original=${doc.id}`}>
+                              <Link
+                      to={`/analysis/${file.id}`}
+                      state={{ file }}
+                    >
+                      <Button size="sm">View Analysis</Button>
+                    </Link>
+                              <Link to={`/compare?original=${file.id}`}>
                                 <Button
                                   size="sm"
                                   variant="outline"

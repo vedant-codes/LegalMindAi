@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback,useEffect } from "react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Progress } from "../components/ui/progress"
@@ -69,6 +69,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
               : f
           )
         );
+        
       } else if (status === "processing") {
         // Animate progress while processing
         progress = Math.min(progress + Math.random() * 20, 95);
@@ -93,6 +94,8 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
     }
   }, 3000);
 };
+
+
 
   const [files, setFiles] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
@@ -159,7 +162,26 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
   }
 
   const completedFiles = files.filter((f) => f.status === "completed")
+  useEffect(() => {
+  const completedFiles = files.filter(f => f.status === "completed" && !f.savedToLocal)
 
+  if (completedFiles.length > 0) {
+    const existingDocs = JSON.parse(localStorage.getItem("documents")) || []
+    const newDocs = completedFiles.map(f => ({ ...f, savedToLocal: true }))
+
+    const updatedDocs = [...existingDocs, ...newDocs]
+    localStorage.setItem("documents", JSON.stringify(updatedDocs))
+
+    // Mark them as saved to avoid repeated saves
+    setFiles((prev) =>
+      prev.map((f) =>
+        completedFiles.find(c => c.id === f.id)
+          ? { ...f, savedToLocal: true }
+          : f
+      )
+    )
+  }
+}, [files])
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
