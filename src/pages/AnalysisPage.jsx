@@ -33,6 +33,7 @@ import axios from "axios"
 import { useRef } from "react"
 import { useEffect } from "react"
 
+
 // Mock data for demonstration
 // const mockAnalysis = {
 //   id: "doc_123",
@@ -89,6 +90,7 @@ export default function AnalysisPage() {
   const [isListening, setIsListening] = useState(false)
   const [negotiationTone, setNegotiationTone] = useState("balanced")
   const recognitionRef = useRef(null);
+  const [generatedEmail, setGeneratedEmail] = useState("")
 
   useEffect(() => {
   if (!("webkitSpeechRecognition" in window)) {
@@ -150,6 +152,97 @@ const toggleListening = () => {
     }
   }
 
+  const handleGenerateEmail = async () => {
+  try {
+    const response = await axios.post("http://localhost:3000/api/negotiation", {
+      tone: negotiationTone,
+      schema: file.analysis,
+    })
+
+    setGeneratedEmail(response.data.result)
+    
+
+  } catch (error) {
+    console.error("Error generating negotiation email:", error)
+    
+  }
+}
+const handleDownloadSummary = () => {
+  const dataStr = JSON.stringify(file.analysis, null, 2)
+  const blob = new Blob([dataStr], { type: "application/json" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = "summary.json"
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+const handleExportDeadlines = () => {
+  const events = file.analysis.dates.map(d => {
+    return `BEGIN:VEVENT
+SUMMARY:${d.desc}
+DTSTART:${d.date.replace(/-/g, "")}T090000Z
+DTEND:${d.date.replace(/-/g, "")}T100000Z
+END:VEVENT`
+  }).join("\n")
+
+  const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+${events}
+END:VCALENDAR`
+
+  const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = "deadlines.ics"
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
+const handleGenerateReport = () => {
+  const report = `
+Summary:
+${file.analysis.summary}
+
+Parties:
+${file.analysis.parties.map(p => `- ${p.name} (${p.role})`).join("\n")}
+
+Financial Terms:
+${file.analysis.financialTerms.map(f => `- ₹${f.amount} on ${f.date}: ${f.desc}`).join("\n")}
+
+Dates:
+${file.analysis.dates.map(d => `- ${d.date}: ${d.desc}`).join("\n")}
+
+Obligations:
+${file.analysis.obligations.map(o => `- ${o.name}: ${o.role}`).join("\n")}
+
+`
+  const blob = new Blob([report], { type: "text/plain" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = "report.txt"
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+}
+
+const handleShareAnalysis = async () => {
+  const dataStr = JSON.stringify(file.analysis, null, 2)
+  await navigator.clipboard.writeText(dataStr)
+  window.alert("Analysis JSON copied to clipboard!")
+}
+
+
+
+
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -169,19 +262,7 @@ const toggleListening = () => {
             <span className="text-2xl font-bold text-slate-800">LegalMind.AI</span>
           </Link>
 
-          <div className="flex items-center space-x-4">
-            <Button variant="outline" size="sm">
-              <Share className="w-4 h-4 mr-2" />
-              Share
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Export
-            </Button>
-            <Link to="/dashboard">
-              <Button variant="outline">Dashboard</Button>
-            </Link>
-          </div>
+          
         </div>
       </motion.header>
 
@@ -429,10 +510,15 @@ const toggleListening = () => {
                       </ul>
                     </div>
 
-                    <Button className="w-full">
+                    <Button className="w-full" onClick={()=>{handleGenerateEmail()}}>
                       <MessageSquare className="w-4 h-4 mr-2" />
                       Generate Negotiation Email
                     </Button>
+                    {generatedEmail && (
+                      <div className="p-4 bg-green-50 rounded-lg text-sm text-green-800">
+                        {generatedEmail}
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -538,19 +624,19 @@ const toggleListening = () => {
                 <CardTitle>Document Actions</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick = {()=>{handleDownloadSummary()}}>
                   <Download className="w-4 h-4 mr-2" />
                   Download Summary
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick = {()=>{handleExportDeadlines()}}>
                   <Calendar className="w-4 h-4 mr-2" />
                   Export Deadlines
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick = {()=>{handleShareAnalysis()}}>
                   <Share className="w-4 h-4 mr-2" />
                   Share Analysis
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick = {()=>{handleGenerateReport()}} >
                   <FileText className="w-4 h-4 mr-2" />
                   Generate Report
                 </Button>
