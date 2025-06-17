@@ -238,6 +238,21 @@ const handleShareAnalysis = async () => {
   window.alert("Analysis JSON copied to clipboard!")
 }
 
+const getTimeAgo = (timestamp) => {
+  const now = Date.now();
+  const diffMs = now - timestamp;
+
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "just now";
+  if (diffMins < 60) return `${diffMins} minute${diffMins !== 1 ? "s" : ""} ago`;
+  if (diffHours < 24) return `${diffHours} hour${diffHours !== 1 ? "s" : ""} ago`;
+  return `${diffDays} day${diffDays !== 1 ? "s" : ""} ago`;
+};
+
+
 
 
 
@@ -284,7 +299,7 @@ const handleShareAnalysis = async () => {
               <h1 className="text-3xl font-bold text-slate-800 mb-2">{file.name}</h1>
               <div className="flex items-center space-x-4">
                 <Badge variant="secondary">{file.type}</Badge>
-                <span className="text-slate-600">Analyzed 2 minutes ago</span>
+                <span className="text-slate-600">Analyzed {getTimeAgo(file.uploadDate)}</span>
               </div>
             </div>
             <div className="text-right">

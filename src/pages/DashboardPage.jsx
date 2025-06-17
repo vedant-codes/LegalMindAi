@@ -1,6 +1,6 @@
 "use client"
 
-import { useState,useEffect } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -74,12 +74,7 @@ import { Link } from "react-router-dom"
 //   },
 // ]
 
-const mockStats = {
-  totalDocuments: 24,
-  highRiskDocuments: 3,
-  avgRiskScore: 62,
-  documentsThisMonth: 8,
-}
+
 
 // Enhanced templates data for dashboard
 const dashboardTemplates = [
@@ -197,12 +192,61 @@ const complexityColors = {
 
 export default function DashboardPage() {
   const [documents, setDocuments] = useState([])
+  const [stats, setStats] = useState({})
+  const [riskDistribution, setRiskDistribution] = useState({
+    low: 0,
+    medium: 0,
+    high: 0,
+  });
+
+  const [typeCounts, setTypeCounts] = useState({});
+
 
   useEffect(() => {
-    const storedDocs = JSON.parse(localStorage.getItem("documents")) || []
-    setDocuments(storedDocs)
-    console.log(storedDocs)
-  }, [])
+    const storedDocs = JSON.parse(localStorage.getItem("documents")) || [];
+    setDocuments(storedDocs);
+
+
+
+    // Compute stats here
+    const totalDocuments = storedDocs.length;
+    const highRiskDocuments = storedDocs.filter(doc => doc.riskScore >= 70).length;
+
+    const avgRiskScore =
+      storedDocs.reduce((acc, doc) => acc + doc.riskScore, 0) /
+      (storedDocs.length || 1);
+
+    const documentsThisMonth = storedDocs.filter(doc => {
+      const completedDate = new Date(doc.completedAt);
+      const now = new Date();
+      return (
+        completedDate.getFullYear() === now.getFullYear() &&
+        completedDate.getMonth() === now.getMonth()
+      );
+    }).length;
+    const risk = {
+      low: storedDocs.filter((doc) => doc.riskScore <= 40).length,
+      medium: storedDocs.filter((doc) => doc.riskScore > 40 && doc.riskScore <= 70).length,
+      high: storedDocs.filter((doc) => doc.riskScore > 70).length,
+    };
+    setRiskDistribution(risk);
+
+    // Compute document type counts
+    const types = storedDocs.reduce((acc, doc) => {
+      acc[doc.type] = (acc[doc.type] || 0) + 1;
+      return acc;
+    }, {});
+    setTypeCounts(types);
+
+    setStats({
+      totalDocuments,
+      highRiskDocuments,
+      avgRiskScore: Math.round(avgRiskScore),
+      documentsThisMonth,
+    });
+
+  }, []);
+
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [selectedTemplate, setSelectedTemplate] = useState(null)
@@ -227,19 +271,19 @@ export default function DashboardPage() {
     return "text-green-600"
   }
 
- const filteredDocuments = documents.filter((doc) => {
-  const name = doc.name || "";
-  const type = doc.type || "";
+  const filteredDocuments = documents.filter((doc) => {
+    const name = doc.name || "";
+    const type = doc.type || "";
 
-  const matchesSearch =
-    name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    type.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch =
+      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      type.toLowerCase().includes(searchTerm.toLowerCase());
 
-  const matchesFilter =
-    filterType === "all" || type.toLowerCase().includes(filterType.toLowerCase());
+    const matchesFilter =
+      filterType === "all" || type.toLowerCase().includes(filterType.toLowerCase());
 
-  return matchesSearch && matchesFilter;
-});
+    return matchesSearch && matchesFilter;
+  });
 
 
   const handleUseTemplate = (template) => {
@@ -290,25 +334,25 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Documents",
-              value: mockStats.totalDocuments,
+              value: stats.totalDocuments,
               icon: FileText,
               color: "text-blue-600",
             },
             {
               label: "High Risk",
-              value: mockStats.highRiskDocuments,
+              value: stats.highRiskDocuments,
               icon: AlertTriangle,
               color: "text-red-600",
             },
             {
               label: "Avg Risk Score",
-              value: mockStats.avgRiskScore,
+              value: stats.avgRiskScore,
               icon: TrendingUp,
               color: "text-yellow-600",
             },
             {
               label: "This Month",
-              value: mockStats.documentsThisMonth,
+              value: stats.documentsThisMonth,
               icon: Calendar,
               color: "text-green-600",
             },
@@ -385,7 +429,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((file,index) => (
+                  {filteredDocuments.map((file, index) => (
                     <div
                       key={index}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
@@ -419,11 +463,11 @@ export default function DashboardPage() {
                           {file.status === "completed" ? (
                             <>
                               <Link
-                      to={`/analysis/${file.id}`}
-                      state={{ file }}
-                    >
-                      <Button size="sm">View Analysis</Button>
-                    </Link>
+                                to={`/analysis/${file.id}`}
+                                state={{ file }}
+                              >
+                                <Button size="sm">View Analysis</Button>
+                              </Link>
                               <Link to={`/compare?original=${file.id}`}>
                                 <Button
                                   size="sm"
@@ -557,15 +601,15 @@ export default function DashboardPage() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">Low Risk (0-40)</span>
-                      <span className="text-sm font-medium">8 documents</span>
+                      <span className="text-sm font-medium">{riskDistribution.low}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
-                      <span className="text-sm font-medium">13 documents</span>
+                      <span className="text-sm font-medium">{riskDistribution.medium}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-600">High Risk (71-100)</span>
-                      <span className="text-sm font-medium">3 documents</span>
+                      <span className="text-sm font-medium">{riskDistribution.high}</span>
                     </div>
                   </div>
                 </CardContent>
@@ -578,24 +622,15 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Service Agreements</span>
-                      <span className="text-sm font-medium">9</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">NDAs</span>
-                      <span className="text-sm font-medium">7</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Employment Contracts</span>
-                      <span className="text-sm font-medium">5</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Licensing Agreements</span>
-                      <span className="text-sm font-medium">3</span>
-                    </div>
+                    {Object.entries(typeCounts).map(([type, count]) => (
+                      <div key={type} className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">{type}</span>
+                        <span className="text-sm font-medium">{count}</span>
+                      </div>
+                    ))}
                   </div>
                 </CardContent>
+
               </Card>
             </div>
           </TabsContent>
@@ -1250,8 +1285,8 @@ function generateRentalAgreement(data) {
   const currentDate = new Date().toLocaleDateString("en-GB")
   const endDate = data.start_date
     ? new Date(
-        new Date(data.start_date).getTime() + Number.parseInt(data.lease_duration || 12) * 30 * 24 * 60 * 60 * 1000,
-      ).toLocaleDateString("en-GB")
+      new Date(data.start_date).getTime() + Number.parseInt(data.lease_duration || 12) * 30 * 24 * 60 * 60 * 1000,
+    ).toLocaleDateString("en-GB")
     : "[End Date]"
 
   return `
@@ -1421,11 +1456,11 @@ function generateGenericDocument(data) {
       
       <div style="margin: 30px 0;">
         ${Object.entries(data)
-          .map(
-            ([key, value]) =>
-              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
-          )
-          .join("")}
+      .map(
+        ([key, value]) =>
+          `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
+      )
+      .join("")}
       </div>
       
       <div style="margin-top: 60px; text-align: center;">
