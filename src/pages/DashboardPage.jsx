@@ -2,6 +2,7 @@
 
 
 import { useState, useEffect } from "react";
+
 import { Printer } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
@@ -469,25 +470,25 @@ export default function DashboardPage() {
                           statusFilter !== "all" ||
                           riskFilter !== "all" ||
                           dateFilter !== "all") && (
-                          <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                            !
-                          </Badge>
-                        )}
+                            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                              !
+                            </Badge>
+                          )}
                       </Button>
                       {(filterType !== "all" ||
                         statusFilter !== "all" ||
                         riskFilter !== "all" ||
                         dateFilter !== "all") && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={clearFilters}
-                          className="h-12 px-4 text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <X className="w-4 h-4 mr-2" />
-                          Clear
-                        </Button>
-                      )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={clearFilters}
+                            className="h-12 px-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <X className="w-4 h-4 mr-2" />
+                            Clear
+                          </Button>
+                        )}
                     </div>
                   </div>
 
@@ -789,18 +790,46 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="analytics">
-            <Card>
-              <CardHeader>
-                <CardTitle>Analytics</CardTitle>
-                <CardDescription>View insights and statistics about your legal documents.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-center h-64">
-                  <p className="text-slate-600">Analytics features coming soon...</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+  <Card>
+    <CardHeader>
+      <CardTitle>Analytics Overview</CardTitle>
+      <CardDescription>Risk distribution and document type breakdown</CardDescription>
+    </CardHeader>
+
+    <CardContent>
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Risk Distribution */}
+        <div className="space-y-4">
+          <h4 className="text-slate-700 font-medium">Risk Distribution</h4>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600">Low Risk (0-40)</span>
+            <span className="text-sm font-medium">{riskDistribution.low} documents</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
+            <span className="text-sm font-medium">{riskDistribution.medium} documents</span>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-slate-600">High Risk (71-100)</span>
+            <span className="text-sm font-medium">{riskDistribution.high} documents</span>
+          </div>
+        </div>
+
+        {/* Document Types */}
+        <div className="space-y-4">
+          <h4 className="text-slate-700 font-medium">Document Types</h4>
+          {Object.entries(typeCounts).map(([type, count]) => (
+            <div key={type} className="flex items-center justify-between">
+              <span className="text-sm text-slate-600">{type}</span>
+              <span className="text-sm font-medium">{count}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
+
 
           <TabsContent value="settings">
             <Card>
@@ -1401,11 +1430,11 @@ function generateTemplateDocument(template, formData) {
       
       <div style="margin: 30px 0;">
         ${Object.entries(formData)
-          .map(
-            ([key, value]) =>
-              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
-          )
-          .join("")}
+      .map(
+        ([key, value]) =>
+          `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
+      )
+      .join("")}
       </div>
       
       <div style="margin-top: 60px; text-align: center;">
