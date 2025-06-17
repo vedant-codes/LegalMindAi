@@ -217,7 +217,7 @@ export default function DashboardPage() {
       (storedDocs.length || 1);
 
     const documentsThisMonth = storedDocs.filter(doc => {
-      const completedDate = new Date(doc.completedAt);
+      const completedDate = new Date(doc.uploadDate);
       const now = new Date();
       return (
         completedDate.getFullYear() === now.getFullYear() &&
