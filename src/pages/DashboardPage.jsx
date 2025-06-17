@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useState, useEffect } from "react";
 import { Printer } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
