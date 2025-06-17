@@ -27,7 +27,43 @@ import {
   ArrowRight,
   Clock,
   TrendingUp,
+  StarIcon,
 } from "lucide-react"
+
+// Custom Dialog Component
+function Dialog({ open, onOpenChange, children }) {
+  if (!open) return null
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">{children}</div>
+    </div>
+  )
+}
+
+function DialogContent({ className, children, ...props }) {
+  return (
+    <div className={`p-6 ${className || ""}`} {...props}>
+      {children}
+    </div>
+  )
+}
+
+function DialogHeader({ children }) {
+  return <div className="mb-4">{children}</div>
+}
+
+function DialogTitle({ children }) {
+  return <h2 className="text-lg font-semibold text-gray-900 mb-2">{children}</h2>
+}
+
+function DialogDescription({ children }) {
+  return <p className="text-sm text-gray-600 mb-4">{children}</p>
+}
+
+function DialogFooter({ children }) {
+  return <div className="flex justify-end space-x-2 mt-6">{children}</div>
+}
 
 const templates = [
   {
@@ -44,7 +80,8 @@ const templates = [
     lastUpdated: "2024-01-10",
     jurisdiction: "India",
     complexity: "Medium",
-    fields: ["party1_name", "party2_name", "effective_date", "purpose", "duration"],
+    fields: 6,
+    needsGovernmentSeal: true,
   },
   {
     id: "2",
@@ -60,7 +97,8 @@ const templates = [
     lastUpdated: "2024-01-08",
     jurisdiction: "India",
     complexity: "High",
-    fields: ["service_provider", "client_name", "services_description", "payment_terms", "duration"],
+    fields: 9,
+    needsGovernmentSeal: true,
   },
   {
     id: "3",
@@ -76,7 +114,8 @@ const templates = [
     lastUpdated: "2024-01-05",
     jurisdiction: "India",
     complexity: "High",
-    fields: ["employee_name", "position", "salary", "start_date", "company_name"],
+    fields: 8,
+    needsGovernmentSeal: true,
   },
   {
     id: "4",
@@ -92,7 +131,8 @@ const templates = [
     lastUpdated: "2024-01-12",
     jurisdiction: "India",
     complexity: "Medium",
-    fields: ["landlord_name", "tenant_name", "property_address", "rent_amount", "lease_duration", "security_deposit"],
+    fields: 10,
+    needsGovernmentSeal: true,
   },
   {
     id: "5",
@@ -108,7 +148,8 @@ const templates = [
     lastUpdated: "2024-01-09",
     jurisdiction: "India",
     complexity: "Low",
-    fields: ["candidate_name", "position", "salary", "joining_date", "company_name", "reporting_manager"],
+    fields: 10,
+    needsGovernmentSeal: false,
   },
   {
     id: "6",
@@ -124,7 +165,8 @@ const templates = [
     lastUpdated: "2024-01-07",
     jurisdiction: "India",
     complexity: "Low",
-    fields: ["employee_name", "position", "resignation_date", "last_working_day", "hr_manager"],
+    fields: 6,
+    needsGovernmentSeal: false,
   },
   {
     id: "7",
@@ -140,7 +182,8 @@ const templates = [
     lastUpdated: "2024-01-06",
     jurisdiction: "India",
     complexity: "Medium",
-    fields: ["deponent_name", "father_name", "address", "statement", "place", "date"],
+    fields: 6,
+    needsGovernmentSeal: true,
   },
   {
     id: "8",
@@ -156,7 +199,42 @@ const templates = [
     lastUpdated: "2023-12-28",
     jurisdiction: "India",
     complexity: "High",
-    fields: ["partner1_name", "partner2_name", "business_name", "capital_contribution", "profit_sharing"],
+    fields: 8,
+    needsGovernmentSeal: true,
+  },
+  {
+    id: "9",
+    name: "Consulting Agreement",
+    type: "Contract",
+    description: "Professional consulting services agreement template",
+    category: "Services",
+    downloads: 445,
+    rating: 4.6,
+    icon: Briefcase,
+    color: "bg-cyan-50 text-cyan-600 border-cyan-200",
+    tags: ["Consulting", "Services", "Professional"],
+    lastUpdated: "2024-01-04",
+    jurisdiction: "India",
+    complexity: "Medium",
+    fields: 7,
+    needsGovernmentSeal: true,
+  },
+  {
+    id: "10",
+    name: "Licensing Agreement",
+    type: "License",
+    description: "Software and product licensing agreement template",
+    category: "Business",
+    downloads: 378,
+    rating: 4.5,
+    icon: FileText,
+    color: "bg-emerald-50 text-emerald-600 border-emerald-200",
+    tags: ["License", "Software", "Business"],
+    lastUpdated: "2024-01-03",
+    jurisdiction: "India",
+    complexity: "High",
+    fields: 6,
+    needsGovernmentSeal: true,
   },
 ]
 
@@ -173,6 +251,9 @@ export default function TemplatesPage() {
   const [sortBy, setSortBy] = useState("popular")
   const [selectedTemplate, setSelectedTemplate] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+  const [userRating, setUserRating] = useState(0)
+  const [ratingComment, setRatingComment] = useState("")
 
   const filteredTemplates = templates.filter((template) => {
     const matchesSearch =
@@ -205,6 +286,17 @@ export default function TemplatesPage() {
   const handlePreview = (template) => {
     setSelectedTemplate(template)
     setShowPreview(true)
+  }
+
+  const handleDocumentGenerated = () => {
+    setShowRatingDialog(true)
+  }
+
+  const submitRating = () => {
+    console.log("Rating submitted:", { rating: userRating, comment: ratingComment })
+    setShowRatingDialog(false)
+    setUserRating(0)
+    setRatingComment("")
   }
 
   return (
@@ -326,7 +418,7 @@ export default function TemplatesPage() {
         >
           <Card className="border-slate-200 mb-8 shadow-lg">
             <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-4">
+              <div className="flex flex-col lg:flex-row gap-4 items-center">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
                   <Input
@@ -336,14 +428,14 @@ export default function TemplatesPage() {
                     className="pl-12 h-12 text-lg"
                   />
                 </div>
-                <div className="flex gap-3 flex-wrap">
+                <div className="flex gap-3 flex-wrap items-center">
                   {categories.map((category) => (
                     <Button
                       key={category}
                       variant={selectedCategory === category ? "default" : "outline"}
                       size="sm"
                       onClick={() => setSelectedCategory(category)}
-                      className={`transition-all duration-200 ${
+                      className={`h-12 px-4 transition-all duration-200 ${
                         selectedCategory === category ? "bg-blue-600 hover:bg-blue-700 shadow-lg" : "hover:bg-blue-50"
                       }`}
                     >
@@ -353,7 +445,7 @@ export default function TemplatesPage() {
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
-                    className="px-4 py-2 border border-slate-300 rounded-md text-sm bg-white hover:bg-slate-50 transition-colors"
+                    className="h-12 px-4 border border-slate-300 rounded-md text-sm bg-white hover:bg-slate-50 transition-colors"
                   >
                     <option value="popular">Most Popular</option>
                     <option value="rating">Highest Rated</option>
@@ -432,7 +524,7 @@ export default function TemplatesPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                            className="flex-1 h-10 hover:bg-blue-50 hover:border-blue-300 transition-colors"
                             onClick={() => handlePreview(template)}
                           >
                             <Eye className="w-4 h-4 mr-2" />
@@ -440,7 +532,7 @@ export default function TemplatesPage() {
                           </Button>
                           <Button
                             size="sm"
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
+                            className="flex-1 h-10 bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all duration-200"
                             onClick={() => handleUseTemplate(template)}
                           >
                             <Edit3 className="w-4 h-4 mr-2" />
@@ -448,7 +540,7 @@ export default function TemplatesPage() {
                           </Button>
                         </div>
                         <div className="text-xs text-slate-500 text-center">
-                          Jurisdiction: {template.jurisdiction} • {template.fields.length} fields to fill
+                          Jurisdiction: {template.jurisdiction} • {template.fields} fields to fill
                         </div>
                       </div>
                     </CardContent>
@@ -491,7 +583,11 @@ export default function TemplatesPage() {
       {/* Template Editor Modal */}
       <AnimatePresence>
         {selectedTemplate && !showPreview && (
-          <TemplateEditor template={selectedTemplate} onClose={() => setSelectedTemplate(null)} />
+          <TemplateEditor
+            template={selectedTemplate}
+            onClose={() => setSelectedTemplate(null)}
+            onDocumentGenerated={handleDocumentGenerated}
+          />
         )}
       </AnimatePresence>
 
@@ -510,12 +606,50 @@ export default function TemplatesPage() {
           />
         )}
       </AnimatePresence>
+
+      {/* Rating Dialog */}
+      <Dialog open={showRatingDialog} onOpenChange={setShowRatingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rate Your Experience</DialogTitle>
+            <DialogDescription>
+              How was your experience with this template? Your feedback helps us improve.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setUserRating(star)} className="transition-colors">
+                  <StarIcon
+                    className={`w-8 h-8 ${star <= userRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="Share your thoughts (optional)"
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              className="w-full p-3 border border-slate-300 rounded-lg resize-none"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRatingDialog(false)}>
+              Skip
+            </Button>
+            <Button onClick={submitRating} disabled={userRating === 0}>
+              Submit Rating
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-// Template Editor Component
-function TemplateEditor({ template, onClose }) {
+// Template Editor Component with enhanced form fields
+function TemplateEditor({ template, onClose, onDocumentGenerated }) {
   const [formData, setFormData] = useState({})
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedDocument, setGeneratedDocument] = useState(null)
@@ -529,13 +663,12 @@ function TemplateEditor({ template, onClose }) {
 
   const generateDocument = async () => {
     setIsGenerating(true)
-
     // Simulate document generation
     await new Promise((resolve) => setTimeout(resolve, 2000))
-
     const document = generateTemplateDocument(template, formData)
     setGeneratedDocument(document)
     setIsGenerating(false)
+    onDocumentGenerated()
   }
 
   const exportDocument = () => {
@@ -567,120 +700,132 @@ function TemplateEditor({ template, onClose }) {
       exit={{ opacity: 0 }}
     >
       <motion.div
-        className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden"
+        className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden"
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.9, opacity: 0 }}
       >
-        <div className="flex h-full">
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
+          <div>
+            <h2 className="text-2xl font-bold text-slate-800">{template.name}</h2>
+            <p className="text-slate-600">Fill in the required information</p>
+          </div>
+          <Button variant="outline" onClick={onClose}>
+            ✕
+          </Button>
+        </div>
+
+        {/* Content */}
+        <div className="flex flex-1 min-h-0">
           {/* Form Section */}
-          <div className="w-1/2 p-6 border-r border-slate-200 overflow-y-auto">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-slate-800">{template.name}</h2>
-                <p className="text-slate-600">Fill in the required information</p>
+          <div className="w-1/2 border-r border-slate-200 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-6">
+              <div className="space-y-4">
+                {getTemplateFields(template).map((field, index) => (
+                  <motion.div
+                    key={field.name}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                    {field.type === "textarea" ? (
+                      <textarea
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                        rows={3}
+                        placeholder={field.placeholder}
+                        value={formData[field.name] || ""}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      />
+                    ) : field.type === "select" ? (
+                      <select
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        value={formData[field.name] || ""}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                      >
+                        <option value="">Select {field.label}</option>
+                        {field.options?.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        value={formData[field.name] || ""}
+                        onChange={(e) => handleInputChange(field.name, e.target.value)}
+                        className="h-12"
+                      />
+                    )}
+                  </motion.div>
+                ))}
               </div>
-              <Button variant="outline" onClick={onClose}>
-                ✕
-              </Button>
             </div>
 
-            <div className="space-y-4">
-              {getTemplateFields(template).map((field, index) => (
-                <motion.div
-                  key={field.name}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.1 }}
+            {/* Form Actions - Fixed at bottom */}
+            <div className="p-6 border-t border-slate-200 bg-white flex-shrink-0">
+              <div className="space-y-3">
+                <Button
+                  onClick={generateDocument}
+                  disabled={isGenerating}
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
                 >
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                  {field.type === "textarea" ? (
-                    <textarea
-                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      rows={3}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    />
-                  ) : field.type === "select" ? (
-                    <select
-                      className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                    >
-                      <option value="">Select {field.label}</option>
-                      {field.options.map((option) => (
-                        <option key={option} value={option}>
-                          {option}
-                        </option>
-                      ))}
-                    </select>
+                  {isGenerating ? (
+                    <>
+                      <Clock className="w-5 h-5 mr-2 animate-spin" />
+                      Generating Document...
+                    </>
                   ) : (
-                    <Input
-                      type={field.type}
-                      placeholder={field.placeholder}
-                      value={formData[field.name] || ""}
-                      onChange={(e) => handleInputChange(field.name, e.target.value)}
-                      className="h-12"
-                    />
+                    <>
+                      <FileText className="w-5 h-5 mr-2" />
+                      Generate Document
+                    </>
                   )}
-                </motion.div>
-              ))}
-            </div>
+                </Button>
 
-            <div className="mt-8 space-y-3">
-              <Button
-                onClick={generateDocument}
-                disabled={isGenerating}
-                className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
-              >
-                {isGenerating ? (
-                  <>
-                    <Clock className="w-5 h-5 mr-2 animate-spin" />
-                    Generating Document...
-                  </>
-                ) : (
-                  <>
-                    <FileText className="w-5 h-5 mr-2" />
-                    Generate Document
-                  </>
+                {generatedDocument && (
+                  <div className="flex space-x-2">
+                    <Button onClick={exportDocument} variant="outline" className="flex-1">
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                    <Button onClick={printDocument} variant="outline" className="flex-1">
+                      <Printer className="w-4 h-4 mr-2" />
+                      Print
+                    </Button>
+                  </div>
                 )}
-              </Button>
-
-              {generatedDocument && (
-                <div className="flex space-x-2">
-                  <Button onClick={exportDocument} variant="outline" className="flex-1">
-                    <Download className="w-4 h-4 mr-2" />
-                    Export
-                  </Button>
-                  <Button onClick={printDocument} variant="outline" className="flex-1">
-                    <Printer className="w-4 h-4 mr-2" />
-                    Print
-                  </Button>
-                </div>
-              )}
+              </div>
             </div>
           </div>
 
           {/* Preview Section */}
-          <div className="w-1/2 p-6 bg-slate-50 overflow-y-auto">
-            <h3 className="text-lg font-semibold text-slate-800 mb-4">Document Preview</h3>
-            {generatedDocument ? (
-              <div
-                className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 min-h-[500px] text-sm leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: generatedDocument }}
-              />
-            ) : (
-              <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 min-h-[500px] flex items-center justify-center">
-                <div className="text-center text-slate-500">
-                  <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                  <p>Fill in the form and click "Generate Document" to see the preview</p>
+          <div className="w-1/2 bg-slate-50 flex flex-col">
+            <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
+              <h3 className="text-lg font-semibold text-slate-800">Document Preview</h3>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-6">
+              {generatedDocument ? (
+                <div
+                  className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 text-sm leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: generatedDocument }}
+                />
+              ) : (
+                <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-full flex items-center justify-center">
+                  <div className="text-center text-slate-500">
+                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                    <p>Fill in the form and click "Generate Document" to see the preview</p>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </motion.div>
@@ -731,32 +876,46 @@ function TemplatePreview({ template, onClose, onUse }) {
   )
 }
 
-// Helper functions for template generation
+// Helper functions (keeping existing implementations)
 function getTemplateFields(template) {
+  // ... existing implementation
   const fieldMappings = {
     1: [
       // NDA
       {
-        name: "party1_name",
-        label: "First Party Name",
+        name: "disclosing_party",
+        label: "Disclosing Party Name",
         type: "text",
         required: true,
-        placeholder: "Enter company/individual name",
+        placeholder: "Enter disclosing party name",
       },
       {
-        name: "party2_name",
-        label: "Second Party Name",
-        type: "text",
-        required: true,
-        placeholder: "Enter company/individual name",
-      },
-      { name: "effective_date", label: "Effective Date", type: "date", required: true },
-      {
-        name: "purpose",
-        label: "Purpose of Disclosure",
+        name: "disclosing_address",
+        label: "Disclosing Party Address",
         type: "textarea",
         required: true,
-        placeholder: "Describe the purpose...",
+        placeholder: "Enter complete address",
+      },
+      {
+        name: "receiving_party",
+        label: "Receiving Party Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter receiving party name",
+      },
+      {
+        name: "receiving_address",
+        label: "Receiving Party Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter complete address",
+      },
+      {
+        name: "purpose",
+        label: "Purpose/Project",
+        type: "textarea",
+        required: true,
+        placeholder: "Describe the purpose or project",
       },
       {
         name: "duration",
@@ -764,6 +923,128 @@ function getTemplateFields(template) {
         type: "number",
         required: true,
         placeholder: "Enter duration in years",
+      },
+    ],
+    2: [
+      // Service Agreement
+      {
+        name: "client_name",
+        label: "Client Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter client name",
+      },
+      {
+        name: "client_address",
+        label: "Client Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter client address",
+      },
+      {
+        name: "service_provider",
+        label: "Service Provider Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter service provider name",
+      },
+      {
+        name: "provider_address",
+        label: "Service Provider Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter service provider address",
+      },
+      {
+        name: "services_description",
+        label: "Services Description",
+        type: "textarea",
+        required: true,
+        placeholder: "Describe the services to be provided",
+      },
+      {
+        name: "payment_amount",
+        label: "Payment Amount (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter payment amount",
+      },
+      {
+        name: "payment_terms",
+        label: "Payment Terms",
+        type: "select",
+        required: true,
+        options: ["Monthly", "One-time", "Quarterly", "Upon completion"],
+      },
+      {
+        name: "start_date",
+        label: "Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "end_date",
+        label: "End Date",
+        type: "date",
+        required: true,
+      },
+    ],
+    3: [
+      // Employment Contract
+      {
+        name: "company_name",
+        label: "Company Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter company name",
+      },
+      {
+        name: "company_address",
+        label: "Company Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter company address",
+      },
+      {
+        name: "employee_name",
+        label: "Employee Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter employee name",
+      },
+      {
+        name: "employee_address",
+        label: "Employee Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter employee address",
+      },
+      {
+        name: "job_title",
+        label: "Job Title",
+        type: "text",
+        required: true,
+        placeholder: "Enter job title",
+      },
+      {
+        name: "start_date",
+        label: "Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "annual_ctc",
+        label: "Annual CTC (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter annual CTC",
+      },
+      {
+        name: "notice_period",
+        label: "Notice Period (Days)",
+        type: "number",
+        required: true,
+        placeholder: "Enter notice period in days",
       },
     ],
     4: [
@@ -776,11 +1057,25 @@ function getTemplateFields(template) {
         placeholder: "Enter landlord's full name",
       },
       {
+        name: "landlord_address",
+        label: "Landlord Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter landlord's address",
+      },
+      {
         name: "tenant_name",
         label: "Tenant Name",
         type: "text",
         required: true,
         placeholder: "Enter tenant's full name",
+      },
+      {
+        name: "tenant_address",
+        label: "Tenant Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter tenant's address",
       },
       {
         name: "property_address",
@@ -797,45 +1092,345 @@ function getTemplateFields(template) {
         placeholder: "Enter monthly rent amount",
       },
       {
-        name: "lease_duration",
-        label: "Lease Duration",
-        type: "select",
-        required: true,
-        options: ["11 Months", "1 Year", "2 Years", "3 Years"],
-      },
-      {
         name: "security_deposit",
         label: "Security Deposit (₹)",
         type: "number",
         required: true,
         placeholder: "Enter security deposit amount",
       },
+      {
+        name: "lease_duration",
+        label: "Lease Duration (Months)",
+        type: "number",
+        required: true,
+        placeholder: "Enter lease duration in months",
+      },
+      {
+        name: "start_date",
+        label: "Lease Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "city",
+        label: "City",
+        type: "text",
+        required: true,
+        placeholder: "Enter city name",
+      },
     ],
     5: [
       // Offer Letter
+      {
+        name: "company_name",
+        label: "Company Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter company name",
+      },
+      {
+        name: "company_address",
+        label: "Company Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter company address",
+      },
+      {
+        name: "company_phone",
+        label: "Company Phone/Email",
+        type: "text",
+        required: true,
+        placeholder: "Enter phone/email",
+      },
       {
         name: "candidate_name",
         label: "Candidate Name",
         type: "text",
         required: true,
-        placeholder: "Enter candidate's full name",
+        placeholder: "Enter candidate name",
       },
-      { name: "position", label: "Position", type: "text", required: true, placeholder: "Enter job position" },
       {
-        name: "salary",
-        label: "Annual Salary (₹)",
-        type: "number",
+        name: "candidate_address",
+        label: "Candidate Address",
+        type: "textarea",
         required: true,
-        placeholder: "Enter annual salary",
+        placeholder: "Enter candidate address",
       },
-      { name: "joining_date", label: "Joining Date", type: "date", required: true },
-      { name: "company_name", label: "Company Name", type: "text", required: true, placeholder: "Enter company name" },
       {
-        name: "reporting_manager",
+        name: "job_title",
+        label: "Job Title",
+        type: "text",
+        required: true,
+        placeholder: "Enter job title",
+      },
+      {
+        name: "start_date",
+        label: "Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "manager_name",
         label: "Reporting Manager",
         type: "text",
         required: true,
-        placeholder: "Enter manager's name",
+        placeholder: "Enter manager name",
+      },
+      {
+        name: "office_location",
+        label: "Office Location",
+        type: "text",
+        required: true,
+        placeholder: "Enter office location",
+      },
+      {
+        name: "annual_ctc",
+        label: "Annual CTC (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter annual CTC",
+      },
+    ],
+    6: [
+      // Resignation Acceptance
+      {
+        name: "company_name",
+        label: "Company Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter company name",
+      },
+      {
+        name: "company_address",
+        label: "Company Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter company address",
+      },
+      {
+        name: "employee_name",
+        label: "Employee Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter employee name",
+      },
+      {
+        name: "employee_address",
+        label: "Employee Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter employee address",
+      },
+      {
+        name: "resignation_date",
+        label: "Resignation Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "last_working_date",
+        label: "Last Working Date",
+        type: "date",
+        required: true,
+      },
+    ],
+    7: [
+      // Affidavit
+      {
+        name: "full_name",
+        label: "Full Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter full name",
+      },
+      {
+        name: "age",
+        label: "Age",
+        type: "number",
+        required: true,
+        placeholder: "Enter age",
+      },
+      {
+        name: "parent_name",
+        label: "Parent's Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter parent's name",
+      },
+      {
+        name: "full_address",
+        label: "Full Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter complete address",
+      },
+      {
+        name: "purpose",
+        label: "Purpose",
+        type: "textarea",
+        required: true,
+        placeholder: "State the purpose (e.g., name correction, address proof, etc.)",
+      },
+      {
+        name: "city",
+        label: "City",
+        type: "text",
+        required: true,
+        placeholder: "Enter city name",
+      },
+    ],
+    8: [
+      // Partnership Agreement
+      {
+        name: "partner_a_name",
+        label: "Partner A Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter Partner A name",
+      },
+      {
+        name: "partner_a_address",
+        label: "Partner A Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter Partner A address",
+      },
+      {
+        name: "partner_b_name",
+        label: "Partner B Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter Partner B name",
+      },
+      {
+        name: "partner_b_address",
+        label: "Partner B Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter Partner B address",
+      },
+      {
+        name: "firm_name",
+        label: "Firm Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter partnership firm name",
+      },
+      {
+        name: "business_nature",
+        label: "Nature of Business",
+        type: "textarea",
+        required: true,
+        placeholder: "Describe the nature of business",
+      },
+      {
+        name: "capital_a",
+        label: "Partner A Capital (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter Partner A capital contribution",
+      },
+      {
+        name: "capital_b",
+        label: "Partner B Capital (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter Partner B capital contribution",
+      },
+    ],
+    9: [
+      // Consulting Agreement
+      {
+        name: "client_name",
+        label: "Client Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter client name",
+      },
+      {
+        name: "client_address",
+        label: "Client Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter client address",
+      },
+      {
+        name: "consultant_name",
+        label: "Consultant Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter consultant name",
+      },
+      {
+        name: "consultant_address",
+        label: "Consultant Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter consultant address",
+      },
+      {
+        name: "services_description",
+        label: "Description of Services",
+        type: "textarea",
+        required: true,
+        placeholder: "Describe the consulting services",
+      },
+      {
+        name: "start_date",
+        label: "Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "end_date",
+        label: "End Date",
+        type: "date",
+        required: true,
+      },
+    ],
+    10: [
+      // Licensing Agreement
+      {
+        name: "licensor_name",
+        label: "Licensor Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter licensor name",
+      },
+      {
+        name: "licensor_address",
+        label: "Licensor Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter licensor address",
+      },
+      {
+        name: "licensee_name",
+        label: "Licensee Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter licensee name",
+      },
+      {
+        name: "licensee_address",
+        label: "Licensee Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter licensee address",
+      },
+      {
+        name: "product_name",
+        label: "Software/Product Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter software/product name",
+      },
+      {
+        name: "license_fee",
+        label: "License Fee (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter license fee",
       },
     ],
   }
@@ -851,356 +1446,1376 @@ function getTemplateFields(template) {
 function generateTemplateDocument(template, formData) {
   const templates = {
     1: generateNDADocument,
+    2: generateServiceAgreement,
+    3: generateEmploymentContract,
     4: generateRentalAgreement,
     5: generateOfferLetter,
     6: generateResignationAcceptance,
     7: generateAffidavit,
+    8: generatePartnershipAgreement,
+    9: generateConsultingAgreement,
+    10: generateLicensingAgreement,
   }
 
   const generator = templates[template.id] || generateGenericDocument
-  return generator(formData)
+  return generator(formData, template)
 }
 
-function generateNDADocument(data) {
+function getTemplatePreview(template) {
+  const governmentStyle = `
+    font-family: 'Times New Roman', serif; 
+    line-height: 1.8; 
+    color: #000; 
+    background: #fff;
+    border: 3px solid #000;
+    padding: 40px;
+    margin: 20px;
+    position: relative;
+  `
+
+  const headerStyle = `
+    text-align: center; 
+    margin-bottom: 30px; 
+    border-bottom: 3px double #000; 
+    padding-bottom: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    margin: -40px -40px 30px -40px;
+    padding: 30px 40px 20px 40px;
+  `
+
+  const sectionStyle = `
+    margin: 20px 0; 
+    padding: 15px 0; 
+    border-bottom: 1px solid #ccc;
+  `
+
+  const signatureStyle = `
+    margin-top: 60px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  `
+
+  const getOfficialSeal = (needsSeal) => {
+    if (!needsSeal) return ""
+    return `
+      <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+        <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+    `
+  }
+
+  const data = {
+    company_name: "[COMPANY NAME]",
+    company_address: "[COMPANY ADDRESS]",
+    company_phone: "[PHONE/EMAIL]",
+    candidate_name: "[CANDIDATE NAME]",
+    candidate_address: "[CANDIDATE ADDRESS]",
+    job_title: "[JOB TITLE]",
+    start_date: "[START DATE]",
+    manager_name: "[MANAGER NAME]",
+    office_location: "[OFFICE LOCATION]",
+    annual_ctc: "[CTC AMOUNT]",
+  }
+
+  const currentDate = new Date().toLocaleDateString("en-GB")
+
+  const previews = {
+    1: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 NON-DISCLOSURE AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Indian Contract Act, 1872
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Disclosing Party:</u> [NAME], [ADDRESS]
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Receiving Party:</u> [NAME], [ADDRESS]
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. PURPOSE:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The Disclosing Party agrees to share certain confidential information with the Receiving Party solely for the purpose of <strong>[PROJECT/PURPOSE]</strong>.
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. CONFIDENTIAL INFORMATION:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            Includes, but is not limited to: business plans, financial data, customer lists, trade secrets, etc.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(DISCLOSING PARTY)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(RECEIVING PARTY)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    2: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 SERVICE AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Indian Contract Act, 1872
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Client:</u> [CLIENT NAME], [CLIENT ADDRESS]
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Service Provider:</u> [SERVICE PROVIDER NAME], [ADDRESS]
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. SCOPE OF SERVICES:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The Service Provider agrees to provide the following services: <strong>[DESCRIBE SERVICES]</strong>.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(CLIENT)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(SERVICE PROVIDER)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    3: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 EMPLOYMENT CONTRACT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under Indian Labor Laws
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Employment Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Employer:</u> [COMPANY NAME], [ADDRESS]
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Employee:</u> [EMPLOYEE NAME], [ADDRESS]
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. POSITION:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The Employee is hired as <strong>[JOB TITLE]</strong>, starting from <strong>[START DATE]</strong>.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(EMPLOYER)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(EMPLOYEE)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    4: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 RESIDENTIAL LEASE AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Model Tenancy Act, 2019
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> at <strong>[CITY, STATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Lessor:</u> [LANDLORD NAME], residing at [LANDLORD ADDRESS]
+          </p>
+          <p style="margin: 10px 0; font-weight: bold; text-align: center;">AND</p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Lessee:</u> [TENANT NAME], residing at [TENANT ADDRESS]
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. PREMISES & TERM:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The lessor agrees to lease the property at <strong>[PROPERTY ADDRESS]</strong> to the lessee for a period of <strong>[LEASE DURATION]</strong> months.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(LANDLORD SIGNATURE)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(TENANT SIGNATURE)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    5: `
+      <div style="${governmentStyle}">
+        <div style="${headerStyle}">
+          <div style="text-align: left; margin-bottom: 20px;">
+            <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000;">
+              [COMPANY NAME]
+            </h2>
+            <p style="margin: 5px 0; font-size: 14px;">[COMPANY ADDRESS]</p>
+            <p style="margin: 5px 0; font-size: 14px;">[PHONE/EMAIL]</p>
+          </div>
+          <p style="text-align: right; margin: 0; font-weight: bold;">Date: [OFFER DATE]</p>
+        </div>
+
+        <div style="margin: 30px 0;">
+          <p style="margin: 10px 0;">To,</p>
+          <p style="margin: 10px 0; font-weight: bold;">[CANDIDATE NAME]</p>
+          <p style="margin: 10px 0;">[CANDIDATE ADDRESS]</p>
+        </div>
+
+        <div style="margin: 30px 0; text-align: center;">
+          <p style="font-weight: bold; text-decoration: underline; font-size: 16px;">
+            Subject: Employment Offer for the Position of [JOB TITLE]
+          </p>
+        </div>
+
+        <p style="margin: 20px 0;">Dear <strong>[CANDIDATE NAME]</strong>,</p>
+
+        <p style="text-align: justify; margin: 20px 0;">
+          We are pleased to offer you the position of <strong>[JOB TITLE]</strong> at <strong>[COMPANY NAME]</strong> with the following terms:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000;">
+          <p style="margin: 10px 0;"><strong>1. Date of Joining:</strong> [START DATE]</p>
+          <p style="margin: 10px 0;"><strong>2. Reporting Manager:</strong> [MANAGER NAME]</p>
+          <p style="margin: 10px 0;"><strong>3. Location:</strong> [OFFICE LOCATION]</p>
+          <p style="margin: 10px 0;"><strong>4. Annual CTC:</strong> INR [CTC AMOUNT]</p>
+          <p style="margin: 10px 0;"><strong>5. Work Schedule:</strong> Monday to Friday, 9:00 AM to 6:00 PM</p>
+          <p style="margin: 10px 0;"><strong>6. Benefits:</strong> Provident Fund, ESIC, Health Insurance, Annual Leaves</p>
+        </div>
+
+        <div style="margin-top: 50px; text-align: right;">
+          <p style="margin: 10px 0;">Accepted By:</p>
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 20px 0 10px auto;"></div>
+          <p style="margin: 10px 0; font-weight: bold;">[CANDIDATE SIGNATURE]</p>
+        </div>
+      </div>
+    `,
+    6: `
+      <div style="${governmentStyle}">
+        <div style="${headerStyle}">
+          <div style="text-align: left; margin-bottom: 20px;">
+            <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000;">
+              [COMPANY LETTERHEAD]
+            </h2>
+            <p style="margin: 5px 0; font-size: 14px;">[COMPANY ADDRESS]</p>
+          </div>
+          <p style="text-align: right; margin: 0; font-weight: bold;">Date: [CURRENT DATE]</p>
+        </div>
+
+        <div style="margin: 30px 0;">
+          <p style="margin: 10px 0;">To,</p>
+          <p style="margin: 10px 0; font-weight: bold;">${data.employee_name || "[EMPLOYEE NAME]"}</p>
+          <p style="margin: 10px 0;">${data.employee_address || "[EMPLOYEE ADDRESS]"}</p>
+        </div>
+
+        <div style="margin: 30px 0; text-align: center;">
+          <p style="font-weight: bold; text-decoration: underline; font-size: 16px;">
+            Subject: Resignation Acceptance – [EMPLOYEE ID / DESIGNATION]
+          </p>
+        </div>
+
+        <p style="margin: 20px 0;">Dear <strong>${data.employee_name || "[EMPLOYEE NAME]"}</strong>,</p>
+
+        <p style="text-align: justify; margin: 20px 0;">
+          This letter is to formally acknowledge the receipt of your resignation dated <strong>${data.resignation_date || "[RESIGNATION DATE]"}</strong>. Your last working day with <strong>${data.company_name || "[COMPANY NAME]"}</strong> will be <strong>${data.last_working_date || "[LAST WORKING DATE]"}</strong>.
+        </p>
+
+        <p style="text-align: justify; margin: 20px 0;">
+          You are requested to ensure a complete handover of your responsibilities to [REPORTING MANAGER/TEAM MEMBER] and return all company assets by your last working day.
+        </p>
+
+        <p style="text-align: justify; margin: 20px 0;">
+          Your final settlement, including salary dues and leave encashments (if any), will be processed on or before [SETTLEMENT DATE].
+        </p>
+
+        <p style="text-align: justify; margin: 20px 0;">
+          We appreciate your contributions and wish you all the very best in your future endeavors.
+        </p>
+
+        <div style="margin-top: 50px;">
+          <p style="margin: 10px 0;">Sincerely,</p>
+          <p style="margin: 10px 0; font-weight: bold;">[HR NAME]</p>
+          <p style="margin: 10px 0;">[DESIGNATION]</p>
+          <p style="margin: 10px 0;">${data.company_name || "[COMPANY NAME]"}</p>
+        </div>
+      </div>
+    `,
+    7: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 AFFIDAVIT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Indian Evidence Act, 1872
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          I, <strong>${data.full_name || "[FULL NAME]"}</strong>, aged <strong>${data.age || "[AGE]"}</strong>, son/daughter of <strong>${data.parent_name || "[PARENT'S NAME]"}</strong>, residing at <strong>${data.full_address || "[FULL ADDRESS]"}</strong>, do hereby solemnly affirm and declare as under:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 15px 0; text-align: justify;">
+            <strong>1.</strong> That I am a citizen of India and residing at the above-mentioned address.
+          </p>
+          <p style="margin: 15px 0; text-align: justify;">
+            <strong>2.</strong> That I am making this declaration for the purpose of <strong>${data.purpose || "[STATE THE PURPOSE, e.g., applying for name correction, address proof, etc.]"}</strong>.
+          </p>
+          <p style="margin: 15px 0; text-align: justify;">
+            <strong>3.</strong> That all the facts stated above are true to the best of my knowledge and belief.
+          </p>
+        </div>
+
+        <div style="margin: 40px 0; padding: 20px; border: 2px solid #000;">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline; text-align: center;">VERIFICATION</h3>
+          <p style="text-align: justify; margin: 15px 0;">
+            I, the above-named deponent, do hereby verify that the contents of this affidavit are true and correct to the best of my knowledge and belief. No part of it is false and nothing material has been concealed therein.
+          </p>
+        </div>
+
+        <div style="margin-top: 50px; display: flex; justify-content: space-between;">
+          <div>
+            <p style="margin: 10px 0;"><strong>Place:</strong> ${data.city || "[CITY]"}</p>
+            <p style="margin: 10px 0;"><strong>Date:</strong> ${currentDate}</p>
+          </div>
+          <div style="text-align: center;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="margin: 5px 0; font-weight: bold;">Deponent's Signature</p>
+            <p style="margin: 5px 0;"><strong>Name:</strong> ${data.full_name || "[FULL NAME]"}</p>
+            <p style="margin: 5px 0;"><strong>AADHAR No./PAN No.:</strong> [ID NUMBER]</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 40px; text-align: center; border: 2px solid #000; padding: 20px;">
+          <p style="font-weight: bold; font-size: 16px;">(Should be Notarized)</p>
+        </div>
+      </div>
+    `,
+    8: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 PARTNERSHIP AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Indian Partnership Act, 1932
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Partner A:</u> ${data.partner_a_name || "[Name]"}, ${data.partner_a_address || "[Address]"}
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Partner B:</u> ${data.partner_b_name || "[Name]"}, ${data.partner_b_address || "[Address]"}
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. NAME & PURPOSE:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The partnership shall operate under the name <strong>${data.firm_name || "[Firm Name]"}</strong> for the purpose of <strong>${data.business_nature || "[Nature of Business]"}</strong>.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(PARTNER A)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(PARTNER B)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    9: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 CONSULTING AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under the Indian Contract Act, 1872
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Client:</u> ${data.client_name || "[CLIENT NAME]"}, ${data.client_address || "[ADDRESS]"}
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Consultant:</u> ${data.consultant_name || "[CONSULTANT NAME]"}, ${data.consultant_address || "[ADDRESS]"}
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. SERVICES:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            Consultant agrees to provide <strong>${data.services_description || "[DESCRIPTION OF SERVICES]"}</strong> from <strong>${data.start_date || "[START DATE]"}</strong> to <strong>${data.end_date || "[END DATE]"}</strong>.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(CLIENT)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(CONSULTANT)</p>
+          </div>
+        </div>
+      </div>
+    `,
+    10: `
+      <div style="${governmentStyle}">
+        ${getOfficialSeal(template.needsGovernmentSeal)}
+        <div style="${headerStyle}">
+          <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+            🇮🇳 LICENSING AGREEMENT 🇮🇳
+          </h1>
+          <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+            Under Indian Jurisdiction
+          </p>
+        </div>
+
+        <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+          This Agreement is made on <strong>[DATE]</strong> between:
+        </p>
+
+        <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Licensor:</u> ${data.licensor_name || "[COMPANY/INDIVIDUAL NAME]"}, ${data.licensor_address || "[ADDRESS]"}
+          </p>
+          <p style="margin: 10px 0; font-weight: bold;">
+            <u>Licensee:</u> ${data.licensee_name || "[LICENSEE NAME]"}, ${data.licensee_address || "[ADDRESS]"}
+          </p>
+        </div>
+
+        <div style="${sectionStyle}">
+          <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. GRANT OF LICENSE:</h3>
+          <p style="text-align: justify; margin-left: 20px;">
+            The Licensor grants the Licensee a non-exclusive, non-transferable license to use <strong>${data.product_name || "[SOFTWARE/PRODUCT NAME]"}</strong> in India.
+          </p>
+        </div>
+
+        <div style="${signatureStyle}">
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(LICENSOR)</p>
+          </div>
+          <div style="text-align: center; width: 45%;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="font-weight: bold;">(LICENSEE)</p>
+          </div>
+        </div>
+      </div>
+    `,
+  }
+
+  
+  return (
+    previews[template.id] ||
+    `
+    <div style="${governmentStyle}">
+      ${getOfficialSeal(template.needsGovernmentSeal)}
+      <div style="${headerStyle}">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 ${template.name.toUpperCase()} 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Government of India
+        </p>
+      </div>
+      <p style="text-align: justify; margin: 20px 0;">
+        This is a preview of the ${template.name} template. Use the template editor to fill in your specific details and generate the complete document.
+      </p>
+    </div>
+  `
+  )
+}
+
+// Updated document generators with government styling and real seal
+function generateNDADocument(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
   return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">NON-DISCLOSURE AGREEMENT</h1>
-        <p style="font-size: 14px; color: #666;">Confidentiality Agreement</p>
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 NON-DISCLOSURE AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Indian Contract Act, 1872
+        </p>
       </div>
 
-      <p style="margin-bottom: 20px;">This Non-Disclosure Agreement ("Agreement") is entered into on <strong>${data.effective_date || "[DATE]"}</strong> between:</p>
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Disclosing Party:</u> ${data.disclosing_party || "[Name]"}, ${data.disclosing_address || "[Address]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Receiving Party:</u> ${data.receiving_party || "[Name]"}, ${data.receiving_address || "[Address]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. PURPOSE:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Disclosing Party agrees to share certain confidential information with the Receiving Party solely for the purpose of <strong>${data.purpose || "[Project/Purpose]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. CONFIDENTIAL INFORMATION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Includes, but is not limited to: business plans, financial data, customer lists, trade secrets, etc.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. OBLIGATION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Receiving Party shall not disclose, reproduce, or use any confidential information for any purpose other than the one stated above.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. TERM:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This Agreement remains in effect for a period of <strong>${data.duration || "[X]"} Years</strong> from the date of execution.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">5. GOVERNING LAW:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This agreement is governed by the laws of India.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(DISCLOSING PARTY)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(RECEIVING PARTY)</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateServiceAgreement(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 SERVICE AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Indian Contract Act, 1872
+        </p>
+      </div>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Client:</u> ${data.client_name || "[Client Name]"}, ${data.client_address || "[Client Address]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Service Provider:</u> ${data.service_provider || "[Service Provider Name]"}, ${data.provider_address || "[Address]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. SCOPE OF SERVICES:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Service Provider agrees to provide the following services: <strong>${data.services_description || "[Describe Services]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. DURATION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The agreement is valid from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${data.end_date || "[End Date]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. PAYMENT TERMS:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Client shall pay INR <strong>${data.payment_amount || "[Amount]"}</strong> for the services, payable <strong>${data.payment_terms || "[Monthly/One-time]"}</strong> upon invoice.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. GOVERNING LAW:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This Agreement shall be governed by the laws of India.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(CLIENT)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(SERVICE PROVIDER)</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateEmploymentContract(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 EMPLOYMENT CONTRACT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under Indian Labor Laws
+        </p>
+      </div>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Employment Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Employer:</u> ${data.company_name || "[Company Name]"}, ${data.company_address || "[Address]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Employee:</u> ${data.employee_name || "[Employee Name]"}, ${data.employee_address || "[Address]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. POSITION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Employee is hired as <strong>${data.job_title || "[Job Title]"}</strong>, starting from <strong>${data.start_date || "[Start Date]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. SALARY:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Employee will receive an annual CTC of INR <strong>${data.annual_ctc || "[Amount]"}</strong>, payable monthly.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. WORK HOURS:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Monday to Friday, 9:00 AM to 6:00 PM or as per company norms.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. TERMINATION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Either party may terminate this agreement with <strong>${data.notice_period || "[30]"} days</strong> notice.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">5. GOVERNING LAW:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This agreement is governed under Indian labor laws.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(EMPLOYER)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(EMPLOYEE)</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateRentalAgreement(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const endDate = data.start_date
+    ? new Date(
+        new Date(data.start_date).getTime() + Number.parseInt(data.lease_duration || 12) * 30 * 24 * 60 * 60 * 1000,
+      ).toLocaleDateString("en-GB")
+    : "[End Date]"
+
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 RESIDENTIAL LEASE AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Model Tenancy Act, 2019
+        </p>
+      </div>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> at <strong>${data.city || "[City]"}, State</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Lessor:</u> ${data.landlord_name || "[Landlord Name]"}, residing at ${data.landlord_address || "[Landlord Address]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold; text-align: center;">AND</p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Lessee:</u> ${data.tenant_name || "[Tenant Name]"}, residing at ${data.tenant_address || "[Tenant Address]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. PREMISES & TERM:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The lessor agrees to lease the property at <strong>${data.property_address || "[Property Address]"}</strong> to the lessee for a period of <strong>${data.lease_duration || "[Lease Duration]"} months</strong>, starting from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${endDate}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. RENT & SECURITY DEPOSIT:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The monthly rent shall be INR <strong>${data.rent_amount || "[Rent Amount]"}</strong>, payable on or before the 5th of each month. A refundable security deposit of INR <strong>${data.security_deposit || "[Deposit Amount]"}</strong> shall be paid at the time of agreement signing.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. GOVERNING LAW:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This agreement is governed under the Indian Contract Act, 1872 and the Model Tenancy Act, 2019.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; text-align: center;">
+        <p style="font-weight: bold; margin-bottom: 40px;">IN WITNESS WHEREOF, both parties have signed this agreement on the date mentioned above.</p>
+        
+        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
+          <div style="width: 45%; text-align: center;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="margin: 5px 0; font-weight: bold;">(LANDLORD SIGNATURE)</p>
+          </div>
+          <div style="width: 45%; text-align: center;">
+            <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+            <p style="margin: 5px 0; font-weight: bold;">(TENANT SIGNATURE)</p>
+          </div>
+        </div>
+
+        <div style="margin-top: 40px;">
+          <p style="font-weight: bold; margin-bottom: 20px;">Witnesses:</p>
+          <div style="display: flex; justify-content: space-between;">
+            <div style="width: 45%; text-align: center;">
+              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+              <p style="margin: 5px 0;">1. ________________________</p>
+            </div>
+            <div style="width: 45%; text-align: center;">
+              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+              <p style="margin: 5px 0;">2. ________________________</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateOfferLetter(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <div style="text-align: left; margin-bottom: 20px;">
+          <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000;">
+            ${data.company_name || "[COMPANY NAME]"}
+          </h2>
+          <p style="margin: 5px 0; font-size: 14px;">${data.company_address || "[COMPANY ADDRESS]"}</p>
+          <p style="margin: 5px 0; font-size: 14px;">${data.company_phone || "[PHONE/EMAIL]"}</p>
+        </div>
+        <p style="text-align: right; margin: 0; font-weight: bold;">Date: ${currentDate}</p>
+      </div>
 
       <div style="margin: 30px 0;">
-        <p><strong>FIRST PARTY:</strong> ${data.party1_name || "[FIRST PARTY NAME]"}</p>
-        <p><strong>SECOND PARTY:</strong> ${data.party2_name || "[SECOND PARTY NAME]"}</p>
+        <p style="margin: 10px 0;">To,</p>
+        <p style="margin: 10px 0; font-weight: bold;">${data.candidate_name || "[CANDIDATE NAME]"}</p>
+        <p style="margin: 10px 0;">${data.candidate_address || "[CANDIDATE ADDRESS]"}</p>
       </div>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">RECITALS</h3>
-      <p>WHEREAS, the parties wish to explore a business relationship relating to: <strong>${data.purpose || "[PURPOSE OF DISCLOSURE]"}</strong>;</p>
+      <div style="margin: 30px 0; text-align: center;">
+        <p style="font-weight: bold; text-decoration: underline; font-size: 16px;">
+          Subject: Employment Offer for the Position of ${data.job_title || "[JOB TITLE]"}
+        </p>
+      </div>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">1. DEFINITION OF CONFIDENTIAL INFORMATION</h3>
-      <p>For purposes of this Agreement, "Confidential Information" shall include all information or material that has or could have commercial value or other utility in the business in which Disclosing Party is engaged.</p>
+      <p style="margin: 20px 0;">Dear <strong>${data.candidate_name || "[CANDIDATE NAME]"}</strong>,</p>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">2. NON-DISCLOSURE</h3>
-      <p>Receiving Party agrees not to disclose, publish, or otherwise reveal any of the Confidential Information received from Disclosing Party to any other party whatsoever except with the specific written authorization of Disclosing Party.</p>
+      <p style="text-align: justify; margin: 20px 0;">
+        We are pleased to offer you the position of <strong>${data.job_title || "[JOB TITLE]"}</strong> at <strong>${data.company_name || "[COMPANY NAME]"}</strong> with the following terms:
+      </p>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">3. TERM</h3>
-      <p>This Agreement shall remain in effect for a period of <strong>${data.duration || "[DURATION]"} years</strong> from the date first written above.</p>
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000;">
+        <p style="margin: 10px 0;"><strong>1. Date of Joining:</strong> ${data.start_date || "[START DATE]"}</p>
+        <p style="margin: 10px 0;"><strong>2. Reporting Manager:</strong> ${data.manager_name || "[MANAGER NAME]"}</p>
+        <p style="margin: 10px 0;"><strong>3. Location:</strong> ${data.office_location || "[OFFICE LOCATION]"}</p>
+        <p style="margin: 10px 0;"><strong>4. Annual CTC:</strong> INR ${data.annual_ctc || "[CTC AMOUNT]"}</p>
+        <p style="margin: 10px 0;"><strong>5. Work Schedule:</strong> Monday to Friday, 9:00 AM to 6:00 PM</p>
+        <p style="margin: 10px 0;"><strong>6. Benefits:</strong> Provident Fund, ESIC, Health Insurance, Annual Leaves</p>
+      </div>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">4. GOVERNING LAW</h3>
-      <p>This Agreement shall be governed by and construed in accordance with the laws of India.</p>
+      <p style="text-align: justify; margin: 20px 0;">
+        Please sign and return this letter by <strong>[ACCEPT BY DATE]</strong> to confirm your acceptance.
+      </p>
 
-      <div style="margin-top: 60px;">
-        <div style="display: flex; justify-content: space-between;">
-          <div style="width: 45%;">
-            <p>_________________________</p>
-            <p><strong>${data.party1_name || "[FIRST PARTY NAME]"}</strong></p>
-            <p>Date: _______________</p>
-          </div>
-          <div style="width: 45%;">
-            <p>_________________________</p>
-            <p><strong>${data.party2_name || "[SECOND PARTY NAME]"}</strong></p>
-            <p>Date: _______________</p>
-          </div>
+      <div style="margin-top: 50px;">
+        <p style="margin: 10px 0;">Sincerely,</p>
+        <p style="margin: 10px 0; font-weight: bold;">[HR NAME]</p>
+        <p style="margin: 10px 0;">[HR DESIGNATION]</p>
+        <p style="margin: 10px 0;">${data.company_name || "[COMPANY NAME]"}</p>
+      </div>
+
+      <div style="margin-top: 50px; text-align: right;">
+        <p style="margin: 10px 0;">Accepted By:</p>
+        <div style="border-bottom: 2px solid #000; width: 200px; margin: 20px 0 10px auto;"></div>
+        <p style="margin: 10px 0; font-weight: bold;">[CANDIDATE SIGNATURE]</p>
+      </div>
+    </div>
+  `
+}
+
+function generateResignationAcceptance(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <div style="text-align: left; margin-bottom: 20px;">
+          <h2 style="font-size: 20px; font-weight: bold; margin: 0; color: #000;">
+            ${data.company_name || "[COMPANY LETTERHEAD]"}
+          </h2>
+          <p style="margin: 5px 0; font-size: 14px;">${data.company_address || "[COMPANY ADDRESS]"}</p>
         </div>
-      </div>
-    </div>
-  `
-}
-
-function generateRentalAgreement(data) {
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">RENTAL AGREEMENT</h1>
-        <p style="font-size: 14px; color: #666;">Leave and License Agreement</p>
+        <p style="text-align: right; margin: 0; font-weight: bold;">Date: ${currentDate}</p>
       </div>
 
-      <p style="margin-bottom: 20px;">This Rental Agreement is made on <strong>${new Date().toLocaleDateString()}</strong> between:</p>
-
-      <div style="margin: 30px 0; background: #f8f9fa; padding: 20px; border-left: 4px solid #007bff;">
-        <p><strong>LANDLORD:</strong> ${data.landlord_name || "[LANDLORD NAME]"}</p>
-        <p><strong>TENANT:</strong> ${data.tenant_name || "[TENANT NAME]"}</p>
+      <div style="margin: 30px 0;">
+        <p style="margin: 10px 0;">To,</p>
+        <p style="margin: 10px 0; font-weight: bold;">${data.employee_name || "[EMPLOYEE NAME]"}</p>
+        <p style="margin: 10px 0;">${data.employee_address || "[EMPLOYEE ADDRESS]"}</p>
       </div>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">PROPERTY DETAILS</h3>
-      <p><strong>Property Address:</strong><br>${data.property_address || "[PROPERTY ADDRESS]"}</p>
-
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">TERMS AND CONDITIONS</h3>
-      
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">1. RENT</h4>
-        <p>The monthly rent for the said property is <strong>₹${data.rent_amount || "[RENT AMOUNT]"}</strong> payable in advance by the 5th of each month.</p>
+      <div style="margin: 30px 0; text-align: center;">
+        <p style="font-weight: bold; text-decoration: underline; font-size: 16px;">
+          Subject: Resignation Acceptance – [EMPLOYEE ID / DESIGNATION]
+        </p>
       </div>
 
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">2. SECURITY DEPOSIT</h4>
-        <p>The Tenant has paid a security deposit of <strong>₹${data.security_deposit || "[SECURITY DEPOSIT]"}</strong> which shall be refunded at the time of vacating the premises, subject to deductions for any damages.</p>
-      </div>
+      <p style="margin: 20px 0;">Dear <strong>${data.employee_name || "[EMPLOYEE NAME]"}</strong>,</p>
 
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">3. DURATION</h4>
-        <p>This agreement is valid for <strong>${data.lease_duration || "[LEASE DURATION]"}</strong> commencing from the date of this agreement.</p>
-      </div>
+      <p style="text-align: justify; margin: 20px 0;">
+        This letter is to formally acknowledge the receipt of your resignation dated <strong>${data.resignation_date || "[RESIGNATION DATE]"}</strong>. Your last working day with <strong>${data.company_name || "[COMPANY NAME]"}</strong> will be <strong>${data.last_working_date || "[LAST WORKING DATE]"}</strong>.
+      </p>
 
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">4. MAINTENANCE</h4>
-        <p>The Tenant shall maintain the property in good condition and shall be responsible for minor repairs and maintenance.</p>
-      </div>
+      <p style="text-align: justify; margin: 20px 0;">
+        You are requested to ensure a complete handover of your responsibilities to [REPORTING MANAGER/TEAM MEMBER] and return all company assets by your last working day.
+      </p>
 
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">5. TERMINATION</h4>
-        <p>Either party may terminate this agreement by giving one month's written notice to the other party.</p>
-      </div>
+      <p style="text-align: justify; margin: 20px 0;">
+        Your final settlement, including salary dues and leave encashments (if any), will be processed on or before [SETTLEMENT DATE].
+      </p>
 
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">GOVERNING LAW</h3>
-      <p>This agreement shall be governed by the laws of India and subject to the jurisdiction of local courts.</p>
-
-      <div style="margin-top: 60px;">
-        <div style="display: flex; justify-content: space-between;">
-          <div style="width: 45%; text-align: center;">
-            <p>_________________________</p>
-            <p><strong>LANDLORD</strong></p>
-            <p>${data.landlord_name || "[LANDLORD NAME]"}</p>
-            <p>Date: _______________</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <p>_________________________</p>
-            <p><strong>TENANT</strong></p>
-            <p>${data.tenant_name || "[TENANT NAME]"}</p>
-            <p>Date: _______________</p>
-          </div>
-        </div>
-      </div>
-
-      <div style="margin-top: 40px; text-align: center;">
-        <p>_________________________</p>
-        <p><strong>WITNESS 1</strong></p>
-        <br>
-        <p>_________________________</p>
-        <p><strong>WITNESS 2</strong></p>
-      </div>
-    </div>
-  `
-}
-
-function generateOfferLetter(data) {
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 3px solid #007bff; padding-bottom: 20px;">
-        <h1 style="font-size: 28px; font-weight: bold; color: #007bff; margin-bottom: 10px;">${data.company_name || "[COMPANY NAME]"}</h1>
-        <h2 style="font-size: 20px; color: #333; margin-bottom: 5px;">EMPLOYMENT OFFER LETTER</h2>
-      </div>
-
-      <div style="margin-bottom: 30px;">
-        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-        <p><strong>To:</strong> ${data.candidate_name || "[CANDIDATE NAME]"}</p>
-      </div>
-
-      <p style="margin-bottom: 20px;">Dear ${data.candidate_name || "[CANDIDATE NAME]"},</p>
-
-      <p style="margin-bottom: 20px;">We are pleased to offer you the position of <strong>${data.position || "[POSITION]"}</strong> with ${data.company_name || "[COMPANY NAME]"}. We believe that your skills and experience will be valuable additions to our team.</p>
-
-      <div style="background: #f8f9fa; padding: 25px; margin: 30px 0; border-radius: 8px; border-left: 4px solid #28a745;">
-        <h3 style="color: #333; margin-bottom: 15px;">EMPLOYMENT DETAILS</h3>
-        <p><strong>Position:</strong> ${data.position || "[POSITION]"}</p>
-        <p><strong>Reporting Manager:</strong> ${data.reporting_manager || "[REPORTING MANAGER]"}</p>
-        <p><strong>Start Date:</strong> ${data.joining_date || "[JOINING DATE]"}</p>
-        <p><strong>Annual Salary:</strong> ₹${data.salary || "[SALARY]"}</p>
-      </div>
-
-      <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">TERMS AND CONDITIONS</h3>
-      
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">1. PROBATION PERIOD</h4>
-        <p>Your employment will be subject to a probationary period of 6 months from your date of joining.</p>
-      </div>
-
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">2. WORKING HOURS</h4>
-        <p>Your normal working hours will be 9:00 AM to 6:00 PM, Monday through Friday, with a one-hour lunch break.</p>
-      </div>
-
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">3. BENEFITS</h4>
-        <p>You will be entitled to benefits as per company policy including health insurance, provident fund, and annual leave.</p>
-      </div>
-
-      <div style="margin: 20px 0;">
-        <h4 style="color: #555;">4. CONFIDENTIALITY</h4>
-        <p>You will be required to sign a confidentiality agreement to protect company information and trade secrets.</p>
-      </div>
-
-      <p style="margin: 30px 0;">Please confirm your acceptance of this offer by signing and returning this letter by [DATE]. We look forward to welcoming you to our team.</p>
+      <p style="text-align: justify; margin: 20px 0;">
+        We appreciate your contributions and wish you all the very best in your future endeavors.
+      </p>
 
       <div style="margin-top: 50px;">
-        <p>Sincerely,</p>
-        <br><br>
-        <p>_________________________</p>
-        <p><strong>HR Manager</strong></p>
-        <p>${data.company_name || "[COMPANY NAME]"}</p>
-      </div>
-
-      <div style="margin-top: 50px; border-top: 2px solid #dee2e6; padding-top: 30px;">
-        <h3 style="color: #333;">ACCEPTANCE</h3>
-        <p>I, ${data.candidate_name || "[CANDIDATE NAME]"}, accept the terms and conditions of employment as outlined in this offer letter.</p>
-        <br><br>
-        <p>_________________________&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Date: _______________</p>
-        <p><strong>Candidate Signature</strong></p>
+        <p style="margin: 10px 0;">Sincerely,</p>
+        <p style="margin: 10px 0; font-weight: bold;">[HR NAME]</p>
+        <p style="margin: 10px 0;">[DESIGNATION]</p>
+        <p style="margin: 10px 0;">${data.company_name || "[COMPANY NAME]"}</p>
       </div>
     </div>
   `
 }
 
-function generateResignationAcceptance(data) {
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">RESIGNATION ACCEPTANCE LETTER</h1>
-      </div>
-
-      <div style="margin-bottom: 30px;">
-        <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
-        <p><strong>To:</strong> ${data.employee_name || "[EMPLOYEE NAME]"}</p>
-        <p><strong>Position:</strong> ${data.position || "[POSITION]"}</p>
-      </div>
-
-      <p style="margin-bottom: 20px;">Dear ${data.employee_name || "[EMPLOYEE NAME]"},</p>
-
-      <p style="margin-bottom: 20px;">This letter acknowledges receipt of your resignation letter dated <strong>${data.resignation_date || "[RESIGNATION DATE]"}</strong>.</p>
-
-      <div style="background: #fff3cd; padding: 20px; margin: 30px 0; border-left: 4px solid #ffc107; border-radius: 4px;">
-        <p><strong>Your resignation is hereby accepted, and your last working day will be ${data.last_working_day || "[LAST WORKING DAY]"}.</strong></p>
-      </div>
-
-      <h3 style="margin-top: 30px; margin-bottom: 15px;">EXIT FORMALITIES</h3>
-      <ul style="margin-left: 20px;">
-        <li>Please ensure all company property is returned before your last working day</li>
-        <li>Complete the exit interview process with HR</li>
-        <li>Hand over all ongoing projects and responsibilities</li>
-        <li>Clear all pending dues and advances</li>
-      </ul>
-
-      <p style="margin: 30px 0;">We appreciate your contributions during your tenure with us and wish you success in your future endeavors.</p>
-
-      <div style="margin-top: 50px;">
-        <p>Best regards,</p>
-        <br><br>
-        <p>_________________________</p>
-        <p><strong>${data.hr_manager || "[HR MANAGER NAME]"}</strong></p>
-        <p>HR Manager</p>
-      </div>
+function generateAffidavit(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
     </div>
   `
-}
+    : ""
 
-function generateAffidavit(data) {
   return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">AFFIDAVIT</h1>
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 AFFIDAVIT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Indian Evidence Act, 1872
+        </p>
       </div>
 
-      <p style="margin-bottom: 20px;">I, <strong>${data.deponent_name || "[DEPONENT NAME]"}</strong>, son/daughter of <strong>${data.father_name || "[FATHER NAME]"}</strong>, resident of ${data.address || "[ADDRESS]"}, do hereby solemnly affirm and declare as follows:</p>
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        I, <strong>${data.full_name || "[FULL NAME]"}</strong>, aged <strong>${data.age || "[AGE]"}</strong>, son/daughter of <strong>${data.parent_name || "[PARENT'S NAME]"}</strong>, residing at <strong>${data.full_address || "[FULL ADDRESS]"}</strong>, do hereby solemnly affirm and declare as under:
+      </p>
 
-      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border-left: 4px solid #dc3545;">
-        <p><strong>STATEMENT:</strong></p>
-        <p>${data.statement || "[STATEMENT/DECLARATION]"}</p>
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 15px 0; text-align: justify;">
+          <strong>1.</strong> That I am a citizen of India and residing at the above-mentioned address.
+        </p>
+        <p style="margin: 15px 0; text-align: justify;">
+          <strong>2.</strong> That I am making this declaration for the purpose of <strong>${data.purpose || "[STATE THE PURPOSE, e.g., applying for name correction, address proof, etc.]"}</strong>.
+        </p>
+        <p style="margin: 15px 0; text-align: justify;">
+          <strong>3.</strong> That all the facts stated above are true to the best of my knowledge and belief.
+        </p>
       </div>
 
-      <p style="margin: 30px 0;">I further state that the above statement is true and correct to the best of my knowledge and belief and nothing has been concealed therein.</p>
-
-      <div style="margin-top: 50px;">
-        <p><strong>Place:</strong> ${data.place || "[PLACE]"}</p>
-        <p><strong>Date:</strong> ${data.date || new Date().toLocaleDateString()}</p>
+      <div style="margin: 40px 0; padding: 20px; border: 2px solid #000;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline; text-align: center;">VERIFICATION</h3>
+        <p style="text-align: justify; margin: 15px 0;">
+          I, the above-named deponent, do hereby verify that the contents of this affidavit are true and correct to the best of my knowledge and belief. No part of it is false and nothing material has been concealed therein.
+        </p>
       </div>
 
       <div style="margin-top: 50px; display: flex; justify-content: space-between;">
         <div>
-          <p>_________________________</p>
-          <p><strong>DEPONENT</strong></p>
-          <p>${data.deponent_name || "[DEPONENT NAME]"}</p>
+          <p style="margin: 10px 0;"><strong>Place:</strong> ${data.city || "[CITY]"}</p>
+          <p style="margin: 10px 0;"><strong>Date:</strong> ${currentDate}</p>
+        </div>
+        <div style="text-align: center;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="margin: 5px 0; font-weight: bold;">Deponent's Signature</p>
+          <p style="margin: 5px 0;"><strong>Name:</strong> ${data.full_name || "[FULL NAME]"}</p>
+          <p style="margin: 5px 0;"><strong>AADHAR No./PAN No.:</strong> [ID NUMBER]</p>
         </div>
       </div>
 
-      <div style="margin-top: 50px; border-top: 1px solid #dee2e6; padding-top: 30px;">
-        <p><strong>VERIFICATION</strong></p>
-        <p>Verified at ${data.place || "[PLACE]"} on ${data.date || "[DATE]"} that the contents of the above affidavit are true and correct to the best of my knowledge and belief.</p>
-        <br><br>
-        <p>_________________________</p>
-        <p><strong>DEPONENT</strong></p>
+      <div style="margin-top: 40px; text-align: center; border: 2px solid #000; padding: 20px;">
+        <p style="font-weight: bold; font-size: 16px;">(Should be Notarized)</p>
       </div>
     </div>
   `
 }
 
-function generateGenericDocument(data) {
+function generatePartnershipAgreement(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
   return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6; max-width: 800px; margin: 0 auto; padding: 40px;">
-      <div style="text-align: center; margin-bottom: 40px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin-bottom: 10px;">LEGAL DOCUMENT</h1>
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 PARTNERSHIP AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Indian Partnership Act, 1932
+        </p>
       </div>
-      <p>This is a generic legal document template. Please customize according to your specific requirements.</p>
-      <div style="margin-top: 50px;">
-        <p>Date: ${new Date().toLocaleDateString()}</p>
-        <br><br>
-        <p>_________________________</p>
-        <p><strong>Signature</strong></p>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Partner A:</u> ${data.partner_a_name || "[Name]"}, ${data.partner_a_address || "[Address]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Partner B:</u> ${data.partner_b_name || "[Name]"}, ${data.partner_b_address || "[Address]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. NAME & PURPOSE:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The partnership shall operate under the name <strong>${data.firm_name || "[Firm Name]"}</strong> for the purpose of <strong>${data.business_nature || "[Nature of Business]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. CAPITAL CONTRIBUTION:</h3>
+        <div style="margin-left: 20px;">
+          <p>Partner A - INR <strong>${data.capital_a || "[Amount]"}</strong></p>
+          <p>Partner B - INR <strong>${data.capital_b || "[Amount]"}</strong></p>
+        </div>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. PROFIT SHARING:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Profits and losses will be shared equally unless agreed otherwise.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. DUTIES & ROLES:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Each partner shall have equal rights in the management and shall work towards business growth.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">5. JURISDICTION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This agreement is governed under the Indian Partnership Act, 1932.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTNER A)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTNER B)</p>
+        </div>
       </div>
     </div>
   `
 }
 
-function getTemplatePreview(template) {
-  const previews = {
-    1: `
-      <div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 24px; font-weight: bold;">NON-DISCLOSURE AGREEMENT</h1>
-        </div>
-        <p>This Non-Disclosure Agreement is entered into between [FIRST PARTY] and [SECOND PARTY] for the purpose of [PURPOSE]...</p>
-        <h3>1. DEFINITION OF CONFIDENTIAL INFORMATION</h3>
-        <p>Confidential Information shall include all information or material that has commercial value...</p>
-        <h3>2. NON-DISCLOSURE</h3>
-        <p>Receiving Party agrees not to disclose any Confidential Information...</p>
-      </div>
-    `,
-    4: `
-      <div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 24px; font-weight: bold;">RENTAL AGREEMENT</h1>
-        </div>
-        <p>This Rental Agreement is made between [LANDLORD] and [TENANT] for the property located at [ADDRESS]...</p>
-        <h3>TERMS AND CONDITIONS</h3>
-        <p><strong>Monthly Rent:</strong> ₹[AMOUNT]</p>
-        <p><strong>Security Deposit:</strong> ₹[AMOUNT]</p>
-        <p><strong>Duration:</strong> [DURATION]</p>
-      </div>
-    `,
-    5: `
-      <div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-        <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="font-size: 24px; font-weight: bold;">[COMPANY NAME]</h1>
-          <h2>EMPLOYMENT OFFER LETTER</h2>
-        </div>
-        <p>Dear [CANDIDATE NAME],</p>
-        <p>We are pleased to offer you the position of [POSITION] with an annual salary of ₹[SALARY]...</p>
-        <p><strong>Start Date:</strong> [DATE]</p>
-        <p><strong>Reporting Manager:</strong> [MANAGER]</p>
-      </div>
-    `,
-  }
-
-  return (
-    previews[template.id] ||
-    `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.6;">
-      <div style="text-align: center; margin-bottom: 30px;">
-        <h1 style="font-size: 24px; font-weight: bold;">${template.name.toUpperCase()}</h1>
-      </div>
-      <p>This is a preview of the ${template.name} template. Use the template editor to fill in your specific details and generate the complete document.</p>
+function generateConsultingAgreement(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
     </div>
   `
-  )
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 CONSULTING AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under the Indian Contract Act, 1872
+        </p>
+      </div>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Client:</u> ${data.client_name || "[CLIENT NAME]"}, ${data.client_address || "[ADDRESS]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Consultant:</u> ${data.consultant_name || "[CONSULTANT NAME]"}, ${data.consultant_address || "[ADDRESS]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. SERVICES:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Consultant agrees to provide <strong>${data.services_description || "[DESCRIPTION OF SERVICES]"}</strong> from <strong>${data.start_date || "[START DATE]"}</strong> to <strong>${data.end_date || "[END DATE]"}</strong>.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. CONFIDENTIALITY:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Consultant shall not disclose any business information.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. INDEPENDENT CONTRACTOR:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Nothing in this agreement creates an employer-employee relationship.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. GOVERNING LAW:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          This agreement is governed by the laws of India.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(CLIENT)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(CONSULTANT)</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateLicensingAgreement(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 LICENSING AGREEMENT 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Under Indian Jurisdiction
+        </p>
+      </div>
+
+      <p style="text-align: justify; margin-bottom: 25px; font-weight: 500;">
+        This Agreement is made on <strong>${currentDate}</strong> between:
+      </p>
+
+      <div style="margin: 30px 0; padding: 20px; background: #f8f9fa; border: 2px solid #000; border-left: 6px solid #000;">
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Licensor:</u> ${data.licensor_name || "[COMPANY/INDIVIDUAL NAME]"}, ${data.licensor_address || "[ADDRESS]"}
+        </p>
+        <p style="margin: 10px 0; font-weight: bold;">
+          <u>Licensee:</u> ${data.licensee_name || "[LICENSEE NAME]"}, ${data.licensee_address || "[ADDRESS]"}
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">1. GRANT OF LICENSE:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Licensor grants the Licensee a non-exclusive, non-transferable license to use <strong>${data.product_name || "[SOFTWARE/PRODUCT NAME]"}</strong> in India.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">2. LICENSE FEE:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          The Licensee agrees to pay INR <strong>${data.license_fee || "[AMOUNT]"}</strong> as licensing fee.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">3. RESTRICTIONS:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Licensee shall not distribute, copy, modify, or reverse engineer the product.
+        </p>
+      </div>
+
+      <div style="margin: 20px 0; padding: 15px 0; border-bottom: 1px solid #ccc;">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">4. JURISDICTION:</h3>
+        <p style="text-align: justify; margin-left: 20px;">
+          Disputes shall be settled under Indian jurisdiction.
+        </p>
+      </div>
+
+      <div style="margin-top: 60px; display: flex; justify-content: space-between; align-items: center;">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(LICENSOR)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(LICENSEE)</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function generateGenericDocument(data, template) {
+  const currentDate = new Date().toLocaleDateString("en-GB")
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+    </div>
+  `
+    : ""
+
+  return `
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 ${template.name.toUpperCase()} 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Government of India
+        </p>
+      </div>
+      
+      <p style="margin-bottom: 25px; text-align: justify;">
+        This is a professional legal document template. Please customize according to your specific requirements.
+      </p>
+      
+      <div style="margin: 30px 0;">
+        ${Object.entries(data)
+          .map(
+            ([key, value]) =>
+              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
+          )
+          .join("")}
+      </div>
+      
+      <div style="margin-top: 60px; text-align: center;">
+        <p style="margin-bottom: 20px;">Date: <strong>${currentDate}</strong></p>
+        <div style="margin-top: 50px;">
+          <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="margin: 5px 0; font-weight: bold;">Signature</p>
+        </div>
+      </div>
+    </div>
+  `
 }

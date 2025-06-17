@@ -1,12 +1,29 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { Printer } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Input } from "../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "../components/ui/dropdown-menu"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "../components/ui/dialog"
 import {
   FileText,
   Upload,
@@ -18,12 +35,8 @@ import {
   TrendingUp,
   Calendar,
   Shield,
-  HandMetal,
   Briefcase,
   Home,
-  UserCheck,
-  FileSignature,
-  Scale,
   Edit3,
   Eye,
   Star,
@@ -31,52 +44,66 @@ import {
   Users,
   ArrowRight,
   GitCompare,
+  Trash2,
+  Edit,
+  Share2,
+  Archive,
+  Copy,
+  StarIcon,
+  X,
+  AlertCircle,
+  FileX,
 } from "lucide-react"
 import { Link } from "react-router-dom"
 
 // Mock data
-// const mockDocuments = [
-//   {
-//     id: "1",
-//     name: "Service Agreement - TechCorp.pdf",
-//     type: "Service Agreement",
-//     status: "analyzed",
-//     riskScore: 72,
-//     uploadDate: "2024-01-15",
-//     size: "2.4 MB",
-//   },
-//   {
-//     id: "2",
-//     name: "NDA - StartupXYZ.docx",
-//     type: "NDA",
-//     status: "processing",
-//     riskScore: null,
-//     uploadDate: "2024-01-14",
-//     size: "1.2 MB",
-//   },
-//   {
-//     id: "3",
-//     name: "Employment Contract - Jane Doe.pdf",
-//     type: "Employment Contract",
-//     status: "analyzed",
-//     riskScore: 45,
-//     uploadDate: "2024-01-13",
-//     size: "3.1 MB",
-//   },
-//   {
-//     id: "4",
-//     name: "Licensing Agreement - SoftwareCo.pdf",
-//     type: "Licensing Agreement",
-//     status: "analyzed",
-//     riskScore: 89,
-//     uploadDate: "2024-01-12",
-//     size: "4.7 MB",
-//   },
-// ]
+const mockDocuments = [
+  {
+    id: "1",
+    name: "Service Agreement - TechCorp.pdf",
+    type: "Service Agreement",
+    status: "analyzed",
+    riskScore: 72,
+    uploadDate: "2024-01-15",
+    size: "2.4 MB",
+  },
+  {
+    id: "2",
+    name: "NDA - StartupXYZ.docx",
+    type: "NDA",
+    status: "processing",
+    riskScore: null,
+    uploadDate: "2024-01-14",
+    size: "1.2 MB",
+  },
+  {
+    id: "3",
+    name: "Employment Contract - Jane Doe.pdf",
+    type: "Employment Contract",
+    status: "analyzed",
+    riskScore: 45,
+    uploadDate: "2024-01-13",
+    size: "3.1 MB",
+  },
+  {
+    id: "4",
+    name: "Licensing Agreement - SoftwareCo.pdf",
+    type: "Licensing Agreement",
+    status: "analyzed",
+    riskScore: 89,
+    uploadDate: "2024-01-12",
+    size: "4.7 MB",
+  },
+]
 
+const mockStats = {
+  totalDocuments: 24,
+  highRiskDocuments: 3,
+  avgRiskScore: 62,
+  documentsThisMonth: 8,
+}
 
-
-// Enhanced templates data for dashboard
+// Enhanced templates data for dashboard - Keep only 4 main templates
 const dashboardTemplates = [
   {
     id: "1",
@@ -89,7 +116,8 @@ const dashboardTemplates = [
     icon: Shield,
     color: "bg-blue-50 text-blue-600 border-blue-200",
     complexity: "Medium",
-    fields: 5,
+    fields: 6,
+    needsGovernmentSeal: true,
   },
   {
     id: "2",
@@ -102,7 +130,8 @@ const dashboardTemplates = [
     icon: Briefcase,
     color: "bg-green-50 text-green-600 border-green-200",
     complexity: "High",
-    fields: 5,
+    fields: 9,
+    needsGovernmentSeal: true,
   },
   {
     id: "3",
@@ -115,7 +144,8 @@ const dashboardTemplates = [
     icon: Users,
     color: "bg-purple-50 text-purple-600 border-purple-200",
     complexity: "High",
-    fields: 5,
+    fields: 8,
+    needsGovernmentSeal: true,
   },
   {
     id: "4",
@@ -128,59 +158,8 @@ const dashboardTemplates = [
     icon: Home,
     color: "bg-orange-50 text-orange-600 border-orange-200",
     complexity: "Medium",
-    fields: 6,
-  },
-  {
-    id: "5",
-    name: "Offer Letter",
-    type: "Employment",
-    description: "Formal employment offer by Indian companies",
-    category: "HR",
-    downloads: 634,
-    rating: 4.8,
-    icon: UserCheck,
-    color: "bg-teal-50 text-teal-600 border-teal-200",
-    complexity: "Low",
-    fields: 6,
-  },
-  {
-    id: "6",
-    name: "Resignation Acceptance Letter",
-    type: "HR",
-    description: "For HR automation in Indian companies",
-    category: "HR",
-    downloads: 423,
-    rating: 4.6,
-    icon: FileSignature,
-    color: "bg-indigo-50 text-indigo-600 border-indigo-200",
-    complexity: "Low",
-    fields: 5,
-  },
-  {
-    id: "7",
-    name: "Affidavit Template",
-    type: "Legal",
-    description: "For self-declarations or statements in courts",
-    category: "Legal",
-    downloads: 567,
-    rating: 4.7,
-    icon: Scale,
-    color: "bg-red-50 text-red-600 border-red-200",
-    complexity: "Medium",
-    fields: 6,
-  },
-  {
-    id: "8",
-    name: "Partnership Agreement",
-    type: "Partnership",
-    description: "Business partnership agreement for joint ventures and collaborations",
-    category: "Business",
-    downloads: 534,
-    rating: 4.8,
-    icon: HandMetal,
-    color: "bg-pink-50 text-pink-600 border-pink-200",
-    complexity: "High",
-    fields: 5,
+    fields: 10,
+    needsGovernmentSeal: true,
   },
 ]
 
@@ -191,8 +170,22 @@ const complexityColors = {
 }
 
 export default function DashboardPage() {
+
   const [documents, setDocuments] = useState([])
   const [stats, setStats] = useState({})
+  const [searchTerm, setSearchTerm] = useState("")
+  const [filterType, setFilterType] = useState("all")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [riskFilter, setRiskFilter] = useState("all")
+  const [dateFilter, setDateFilter] = useState("all")
+  const [showFilters, setShowFilters] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
+  const [showRatingDialog, setShowRatingDialog] = useState(false)
+  const [userRating, setUserRating] = useState(0)
+  const [ratingComment, setRatingComment] = useState("")
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [documentToDelete, setDocumentToDelete] = useState(null)
   const [riskDistribution, setRiskDistribution] = useState({
     low: 0,
     medium: 0,
@@ -247,9 +240,7 @@ export default function DashboardPage() {
 
   }, []);
 
-  const [searchTerm, setSearchTerm] = useState("")
-  const [filterType, setFilterType] = useState("all")
-  const [selectedTemplate, setSelectedTemplate] = useState(null)
+
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -272,27 +263,90 @@ export default function DashboardPage() {
   }
 
   const filteredDocuments = documents.filter((doc) => {
-    const name = doc.name || "";
-    const type = doc.type || "";
-
     const matchesSearch =
-      name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      type.toLowerCase().includes(searchTerm.toLowerCase());
+      doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      doc.type.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesFilter =
-      filterType === "all" || type.toLowerCase().includes(filterType.toLowerCase());
+    const matchesType = filterType === "all" || doc.type.toLowerCase().includes(filterType.toLowerCase())
 
-    return matchesSearch && matchesFilter;
-  });
+    const matchesStatus = statusFilter === "all" || doc.status === statusFilter
 
+    const matchesRisk =
+      riskFilter === "all" ||
+      (riskFilter === "low" && doc.riskScore && doc.riskScore < 40) ||
+      (riskFilter === "medium" && doc.riskScore && doc.riskScore >= 40 && doc.riskScore < 70) ||
+      (riskFilter === "high" && doc.riskScore && doc.riskScore >= 70)
+
+    const matchesDate =
+      dateFilter === "all" ||
+      (dateFilter === "today" && new Date(doc.uploadDate).toDateString() === new Date().toDateString()) ||
+      (dateFilter === "week" && new Date(doc.uploadDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (dateFilter === "month" && new Date(doc.uploadDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+
+    return matchesSearch && matchesType && matchesStatus && matchesRisk && matchesDate
+  })
 
   const handleUseTemplate = (template) => {
     setSelectedTemplate(template)
+    setShowPreview(false)
   }
 
   const handlePreviewTemplate = (template) => {
-    // For now, we'll use the same handler - you can differentiate later
     setSelectedTemplate(template)
+    setShowPreview(true)
+  }
+
+  const handleDocumentGenerated = () => {
+    setShowRatingDialog(true)
+  }
+
+  const submitRating = () => {
+    console.log("Rating submitted:", { rating: userRating, comment: ratingComment })
+    setShowRatingDialog(false)
+    setUserRating(0)
+    setRatingComment("")
+  }
+
+  const handleDeleteDocument = (docId) => {
+    setDocuments(documents.filter((doc) => doc.id !== docId))
+    setShowDeleteDialog(false)
+    setDocumentToDelete(null)
+  }
+
+  const handleModifyDocument = (docId) => {
+    console.log("Modifying document:", docId)
+    // Implement modify functionality
+  }
+
+  const handleShareDocument = (docId) => {
+    console.log("Sharing document:", docId)
+    // Implement share functionality
+  }
+
+  const handleArchiveDocument = (docId) => {
+    console.log("Archiving document:", docId)
+    // Implement archive functionality
+  }
+
+  const handleDuplicateDocument = (docId) => {
+    const docToDuplicate = documents.find((doc) => doc.id === docId)
+    if (docToDuplicate) {
+      const newDoc = {
+        ...docToDuplicate,
+        id: Date.now().toString(),
+        name: `Copy of ${docToDuplicate.name}`,
+        uploadDate: new Date().toISOString().split("T")[0],
+      }
+      setDocuments([newDoc, ...documents])
+    }
+  }
+
+  const clearFilters = () => {
+    setFilterType("all")
+    setStatusFilter("all")
+    setRiskFilter("all")
+    setDateFilter("all")
+    setSearchTerm("")
   }
 
   return (
@@ -308,7 +362,7 @@ export default function DashboardPage() {
           </Link>
           <div className="flex items-center space-x-4">
             <Link to="/upload">
-              <Button>
+              <Button className="h-10">
                 <Upload className="w-4 h-4 mr-2" />
                 Upload Document
               </Button>
@@ -334,25 +388,25 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Documents",
-              value: stats.totalDocuments,
+              value: mockStats.totalDocuments,
               icon: FileText,
               color: "text-blue-600",
             },
             {
               label: "High Risk",
-              value: stats.highRiskDocuments,
+              value: mockStats.highRiskDocuments,
               icon: AlertTriangle,
               color: "text-red-600",
             },
             {
               label: "Avg Risk Score",
-              value: stats.avgRiskScore,
+              value: mockStats.avgRiskScore,
               icon: TrendingUp,
               color: "text-yellow-600",
             },
             {
               label: "This Month",
-              value: stats.documentsThisMonth,
+              value: mockStats.documentsThisMonth,
               icon: Calendar,
               color: "text-green-600",
             },
@@ -387,36 +441,121 @@ export default function DashboardPage() {
           </TabsList>
 
           <TabsContent value="documents" className="space-y-6">
-            {/* Search and Filter */}
+            {/* Enhanced Search and Filter */}
             <Card>
               <CardContent className="p-6">
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <div className="flex-1 relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
-                    <Input
-                      placeholder="Search documents..."
-                      value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
-                      className="pl-10"
-                    />
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row gap-4 items-center">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                      <Input
+                        placeholder="Search documents..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10 h-12"
+                      />
+                    </div>
+                    <div className="flex gap-2 items-center">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="h-12 px-4"
+                      >
+                        <Filter className="w-4 h-4 mr-2" />
+                        Filters
+                        {(filterType !== "all" ||
+                          statusFilter !== "all" ||
+                          riskFilter !== "all" ||
+                          dateFilter !== "all") && (
+                          <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
+                            !
+                          </Badge>
+                        )}
+                      </Button>
+                      {(filterType !== "all" ||
+                        statusFilter !== "all" ||
+                        riskFilter !== "all" ||
+                        dateFilter !== "all") && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={clearFilters}
+                          className="h-12 px-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4 mr-2" />
+                          Clear
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm">
-                      <Filter className="w-4 h-4 mr-2" />
-                      Filter
-                    </Button>
-                    <select
-                      value={filterType}
-                      onChange={(e) => setFilterType(e.target.value)}
-                      className="px-3 py-2 border border-slate-300 rounded-md text-sm"
+
+                  {/* Advanced Filters */}
+                  {showFilters && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg border"
                     >
-                      <option value="all">All Types</option>
-                      <option value="nda">NDA</option>
-                      <option value="service">Service Agreement</option>
-                      <option value="employment">Employment</option>
-                      <option value="licensing">Licensing</option>
-                    </select>
-                  </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Document Type</label>
+                        <select
+                          value={filterType}
+                          onChange={(e) => setFilterType(e.target.value)}
+                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
+                        >
+                          <option value="all">All Types</option>
+                          <option value="nda">NDA</option>
+                          <option value="service">Service Agreement</option>
+                          <option value="employment">Employment</option>
+                          <option value="licensing">Licensing</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
+                        <select
+                          value={statusFilter}
+                          onChange={(e) => setStatusFilter(e.target.value)}
+                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
+                        >
+                          <option value="all">All Status</option>
+                          <option value="analyzed">Analyzed</option>
+                          <option value="processing">Processing</option>
+                          <option value="error">Error</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Risk Level</label>
+                        <select
+                          value={riskFilter}
+                          onChange={(e) => setRiskFilter(e.target.value)}
+                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
+                        >
+                          <option value="all">All Risk Levels</option>
+                          <option value="low">Low Risk (0-39)</option>
+                          <option value="medium">Medium Risk (40-69)</option>
+                          <option value="high">High Risk (70+)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 mb-2">Upload Date</label>
+                        <select
+                          value={dateFilter}
+                          onChange={(e) => setDateFilter(e.target.value)}
+                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
+                        >
+                          <option value="all">All Dates</option>
+                          <option value="today">Today</option>
+                          <option value="week">This Week</option>
+                          <option value="month">This Month</option>
+                        </select>
+                      </div>
+                    </motion.div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -424,55 +563,66 @@ export default function DashboardPage() {
             {/* Documents List */}
             <Card>
               <CardHeader>
-                <CardTitle>Recent Documents</CardTitle>
-                <CardDescription>Your uploaded and analyzed legal documents</CardDescription>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Recent Documents</CardTitle>
+                    <CardDescription>
+                      Your uploaded and analyzed legal documents ({filteredDocuments.length} of {documents.length})
+                    </CardDescription>
+                  </div>
+                  {filteredDocuments.length !== documents.length && (
+                    <Badge variant="secondary">
+                      Filtered: {filteredDocuments.length}/{documents.length}
+                    </Badge>
+                  )}
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((file, index) => (
+                  {filteredDocuments.map((doc) => (
                     <div
-                      key={index}
+                      key={doc.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
                     >
-                      <div className="flex items-center space-x-4">
+                      <div className="flex items-center space-x-4 flex-1">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                           <FileText className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-slate-800">{file.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-slate-800 truncate">{doc.name}</h3>
                           <div className="flex items-center space-x-4 mt-1">
                             <Badge variant="secondary" className="text-xs">
-                              {file.type}
+                              {doc.type}
                             </Badge>
-                            <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
+                            <Badge className={`text-xs ${getStatusColor(doc.status)}`}>{doc.status}</Badge>
                             <span className="text-xs text-slate-500">
-                              {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
+                              {doc.size} • {new Date(doc.uploadDate).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </div>
+
                       <div className="flex items-center space-x-4">
-                        {file.riskScore && (
+                        {doc.riskScore && (
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
-                              Risk: {file.riskScore}/100
+                            <div className={`text-sm font-medium ${getRiskColor(doc.riskScore)}`}>
+                              Risk: {doc.riskScore}/100
                             </div>
                           </div>
                         )}
                         <div className="flex items-center space-x-2">
-                          {file.status === "completed" ? (
+                          {doc.status === "analyzed" ? (
                             <>
-                              <Link
-                                to={`/analysis/${file.id}`}
-                                state={{ file }}
-                              >
-                                <Button size="sm">View Analysis</Button>
+                              <Link to={`/analysis/${doc.id}`}>
+                                <Button size="sm" className="h-8">
+                                  View Analysis
+                                </Button>
                               </Link>
-                              <Link to={`/compare?original=${file.id}`}>
+                              <Link to={`/compare?original=${doc.id}`}>
                                 <Button
                                   size="sm"
                                   variant="outline"
-                                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  className="h-8 text-purple-600 border-purple-200 hover:bg-purple-50"
                                 >
                                   <GitCompare className="w-4 h-4 mr-2" />
                                   Compare
@@ -480,18 +630,72 @@ export default function DashboardPage() {
                               </Link>
                             </>
                           ) : (
-                            <Button size="sm" variant="outline" disabled>
+                            <Button size="sm" variant="outline" disabled className="h-8">
                               <Clock className="w-4 h-4 mr-2" />
                               Processing
                             </Button>
                           )}
-                          <Button size="sm" variant="ghost">
-                            <MoreHorizontal className="w-4 h-4" />
-                          </Button>
+
+                          {/* Enhanced 3-dots menu */}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                              <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => handleModifyDocument(doc.id)}>
+                                <Edit className="w-4 h-4 mr-2" />
+                                Modify
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDuplicateDocument(doc.id)}>
+                                <Copy className="w-4 h-4 mr-2" />
+                                Duplicate
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleShareDocument(doc.id)}>
+                                <Share2 className="w-4 h-4 mr-2" />
+                                Share
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleArchiveDocument(doc.id)}>
+                                <Archive className="w-4 h-4 mr-2" />
+                                Archive
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  setDocumentToDelete(doc)
+                                  setShowDeleteDialog(true)
+                                }}
+                                className="text-red-600 focus:text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                     </div>
                   ))}
+
+                  {filteredDocuments.length === 0 && (
+                    <div className="text-center py-12">
+                      <FileX className="w-16 h-16 mx-auto mb-4 text-slate-400" />
+                      <h3 className="text-lg font-medium text-slate-800 mb-2">No documents found</h3>
+                      <p className="text-slate-600 mb-4">
+                        {documents.length === 0
+                          ? "Upload your first document to get started"
+                          : "Try adjusting your search or filter criteria"}
+                      </p>
+                      {documents.length > 0 && (
+                        <Button onClick={clearFilters} variant="outline">
+                          Clear Filters
+                        </Button>
+                      )}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -509,7 +713,7 @@ export default function DashboardPage() {
                       </CardDescription>
                     </div>
                     <Link to="/templates">
-                      <Button variant="outline">
+                      <Button variant="outline" className="h-10">
                         View All Templates
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
@@ -526,59 +730,52 @@ export default function DashboardPage() {
                         transition={{ delay: index * 0.05, duration: 0.4 }}
                         whileHover={{ y: -5, transition: { duration: 0.2 } }}
                       >
-                        <Card className="border-slate-200 hover:shadow-lg transition-all duration-300 h-full group cursor-pointer">
-                          <CardHeader className="pb-3">
-                            <div className="flex items-start justify-between mb-3">
+                        <Card className="border-slate-200 hover:shadow-lg transition-all duration-300 h-full group">
+                          <CardHeader className="pb-2">
+                            <div className="flex items-start justify-between mb-2">
                               <div
-                                className={`w-12 h-12 ${template.color} rounded-lg flex items-center justify-center border group-hover:scale-110 transition-transform duration-200`}
+                                className={`w-12 h-12 ${template.color} rounded-xl flex items-center justify-center border-2 group-hover:scale-110 transition-transform duration-200`}
                               >
                                 <template.icon className="w-6 h-6" />
                               </div>
-                              <div className="flex items-center space-x-2">
-                                <div className="flex items-center space-x-1">
-                                  <Star className="w-3 h-3 text-yellow-400 fill-current" />
-                                  <span className="text-xs font-medium text-slate-700">{template.rating}</span>
-                                </div>
-                                <Badge className={`text-xs ${complexityColors[template.complexity]}`}>
-                                  {template.complexity}
-                                </Badge>
-                              </div>
+                              <Badge className={complexityColors[template.complexity]}>{template.complexity}</Badge>
                             </div>
-                            <CardTitle className="text-slate-800 text-sm mb-2 group-hover:text-blue-600 transition-colors line-clamp-2">
+                            <CardTitle className="text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">
                               {template.name}
                             </CardTitle>
-                            <CardDescription className="text-slate-600 text-xs leading-relaxed line-clamp-2">
+                            <CardDescription className="text-slate-600 line-clamp-2 text-sm">
                               {template.description}
                             </CardDescription>
                           </CardHeader>
                           <CardContent className="pt-0">
                             <div className="flex items-center justify-between text-xs text-slate-600 mb-4">
+                              <div className="flex items-center space-x-2">
+                                <Star className="w-3 h-3 text-yellow-400 fill-current" />
+                                <span>{template.rating}</span>
+                              </div>
                               <span className="flex items-center space-x-1">
                                 <Download className="w-3 h-3" />
                                 <span>{template.downloads.toLocaleString()}</span>
                               </span>
-                              <span>{template.fields} fields</span>
                             </div>
-                            <div className="space-y-2">
-                              <div className="flex space-x-2">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="flex-1 text-xs hover:bg-blue-50 hover:border-blue-300 transition-colors"
-                                  onClick={() => handlePreviewTemplate(template)}
-                                >
-                                  <Eye className="w-3 h-3 mr-1" />
-                                  Preview
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  className="flex-1 text-xs bg-blue-600 hover:bg-blue-700 transition-colors"
-                                  onClick={() => handleUseTemplate(template)}
-                                >
-                                  <Edit3 className="w-3 h-3 mr-1" />
-                                  Use
-                                </Button>
-                              </div>
+                            <div className="flex space-x-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-8 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                onClick={() => handlePreviewTemplate(template)}
+                              >
+                                <Eye className="w-3 h-3 mr-1" />
+                                Preview
+                              </Button>
+                              <Button
+                                size="sm"
+                                className="flex-1 h-8 bg-blue-600 hover:bg-blue-700"
+                                onClick={() => handleUseTemplate(template)}
+                              >
+                                <Edit3 className="w-3 h-3 mr-1" />
+                                Use
+                              </Button>
                             </div>
                           </CardContent>
                         </Card>
@@ -590,113 +787,170 @@ export default function DashboardPage() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Risk Distribution</CardTitle>
-                  <CardDescription>Risk levels across your documents</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Low Risk (0-40)</span>
-                      <span className="text-sm font-medium">{riskDistribution.low}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
-                      <span className="text-sm font-medium">{riskDistribution.medium}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">High Risk (71-100)</span>
-                      <span className="text-sm font-medium">{riskDistribution.high}</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Document Types</CardTitle>
-                  <CardDescription>Breakdown by document category</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    {Object.entries(typeCounts).map(([type, count]) => (
-                      <div key={type} className="flex items-center justify-between">
-                        <span className="text-sm text-slate-600">{type}</span>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
+          <TabsContent value="analytics">
             <Card>
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your LegalMind.AI preferences</CardDescription>
+                <CardTitle>Analytics</CardTitle>
+                <CardDescription>View insights and statistics about your legal documents.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 mb-2">Notification Preferences</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">
-                        Email notifications for document analysis completion
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">High-risk document alerts</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm text-slate-600">Weekly summary reports</span>
-                    </label>
-                  </div>
+              <CardContent>
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-slate-600">Analytics features coming soon...</p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 mb-2">Default Analysis Settings</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">Auto-generate risk assessment</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">Extract key entities automatically</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm text-slate-600">Generate negotiation suggestions</span>
-                    </label>
-                  </div>
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Settings</CardTitle>
+                <CardDescription>Manage your account and preferences.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-slate-600">Settings features coming soon...</p>
                 </div>
-
-                <Button>Save Settings</Button>
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Template Editor Modal - Import from TemplatesPage */}
-      {selectedTemplate && (
-        <TemplateEditorModal template={selectedTemplate} onClose={() => setSelectedTemplate(null)} />
+      {/* Template Preview Modal */}
+      {selectedTemplate && showPreview && (
+        <TemplatePreview
+          template={selectedTemplate}
+          onClose={() => {
+            setSelectedTemplate(null)
+            setShowPreview(false)
+          }}
+          onUse={() => {
+            setShowPreview(false)
+          }}
+        />
       )}
+
+      {/* Template Editor Modal */}
+      {selectedTemplate && !showPreview && (
+        <TemplateEditor
+          template={selectedTemplate}
+          onClose={() => setSelectedTemplate(null)}
+          onDocumentGenerated={handleDocumentGenerated}
+        />
+      )}
+
+      {/* Rating Dialog */}
+      <Dialog open={showRatingDialog} onOpenChange={setShowRatingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rate Your Experience</DialogTitle>
+            <DialogDescription>
+              How was your experience with this template? Your feedback helps us improve.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setUserRating(star)} className="transition-colors">
+                  <StarIcon
+                    className={`w-8 h-8 ${star <= userRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="Share your thoughts (optional)"
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              className="w-full p-3 border border-slate-300 rounded-lg resize-none"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRatingDialog(false)}>
+              Skip
+            </Button>
+            <Button onClick={submitRating} disabled={userRating === 0}>
+              Submit Rating
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 border rounded-lg bg-slate-50">
+            <p className="font-medium text-slate-800">{documentToDelete?.name}</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {documentToDelete?.type} • {documentToDelete?.size} • Uploaded on{" "}
+              {new Date(documentToDelete?.uploadDate || "").toLocaleDateString()}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => documentToDelete && handleDeleteDocument(documentToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
 
-// Template Editor Modal Component with fixed scrolling
-function TemplateEditorModal({ template, onClose }) {
+// Template Preview Component
+function TemplatePreview({ template, onClose, onUse }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{template.name} - Preview</h2>
+              <p className="text-slate-600">Sample template with placeholder content</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={onUse} className="bg-blue-600 hover:bg-blue-700">
+                <Edit3 className="w-4 h-4 mr-2" />
+                Use This Template
+              </Button>
+              <Button variant="outline" onClick={onClose}>
+                ✕
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="bg-white border border-slate-200 rounded-lg p-8 shadow-sm">
+            <div dangerouslySetInnerHTML={{ __html: getTemplatePreview(template) }} />
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Template Editor Component
+function TemplateEditor({ template, onClose, onDocumentGenerated }) {
   const [formData, setFormData] = useState({})
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedDocument, setGeneratedDocument] = useState(null)
@@ -715,6 +969,7 @@ function TemplateEditorModal({ template, onClose }) {
     const document = generateTemplateDocument(template, formData)
     setGeneratedDocument(document)
     setIsGenerating(false)
+    onDocumentGenerated()
   }
 
   const exportDocument = () => {
@@ -739,18 +994,8 @@ function TemplateEditorModal({ template, onClose }) {
   }
 
   return (
-    <motion.div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-    >
-      <motion.div
-        className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden"
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        exit={{ scale: 0.9, opacity: 0 }}
-      >
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
           <div>
@@ -769,12 +1014,7 @@ function TemplateEditorModal({ template, onClose }) {
             <div className="flex-1 overflow-y-auto p-6">
               <div className="space-y-4">
                 {getTemplateFields(template).map((field, index) => (
-                  <motion.div
-                    key={field.name}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: index * 0.1 }}
-                  >
+                  <div key={field.name}>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       {field.label}
                       {field.required && <span className="text-red-500 ml-1">*</span>}
@@ -801,15 +1041,15 @@ function TemplateEditorModal({ template, onClose }) {
                         ))}
                       </select>
                     ) : (
-                      <Input
+                      <input
                         type={field.type}
                         placeholder={field.placeholder}
                         value={formData[field.name] || ""}
                         onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="h-12"
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       />
                     )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -842,7 +1082,7 @@ function TemplateEditorModal({ template, onClose }) {
                       Export
                     </Button>
                     <Button onClick={printDocument} variant="outline" className="flex-1">
-                      <FileText className="w-4 h-4 mr-2" />
+                      <Printer className="w-4 h-4 mr-2" />
                       Print
                     </Button>
                   </div>
@@ -874,12 +1114,12 @@ function TemplateEditorModal({ template, onClose }) {
             </div>
           </div>
         </div>
-      </motion.div>
-    </motion.div>
+      </div>
+    </div>
   )
 }
 
-// Helper functions with updated professional formatting
+// Helper functions
 function getTemplateFields(template) {
   const fieldMappings = {
     1: [
@@ -991,6 +1231,64 @@ function getTemplateFields(template) {
         required: true,
       },
     ],
+    3: [
+      // Employment Contract
+      {
+        name: "company_name",
+        label: "Company Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter company name",
+      },
+      {
+        name: "company_address",
+        label: "Company Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter company address",
+      },
+      {
+        name: "employee_name",
+        label: "Employee Name",
+        type: "text",
+        required: true,
+        placeholder: "Enter employee name",
+      },
+      {
+        name: "employee_address",
+        label: "Employee Address",
+        type: "textarea",
+        required: true,
+        placeholder: "Enter employee address",
+      },
+      {
+        name: "job_title",
+        label: "Job Title",
+        type: "text",
+        required: true,
+        placeholder: "Enter job title",
+      },
+      {
+        name: "start_date",
+        label: "Start Date",
+        type: "date",
+        required: true,
+      },
+      {
+        name: "annual_ctc",
+        label: "Annual CTC (INR)",
+        type: "number",
+        required: true,
+        placeholder: "Enter annual CTC",
+      },
+      {
+        name: "notice_period",
+        label: "Notice Period (Days)",
+        type: "number",
+        required: true,
+        placeholder: "Enter notice period in days",
+      },
+    ],
     4: [
       // Rental Agreement
       {
@@ -1063,65 +1361,6 @@ function getTemplateFields(template) {
         placeholder: "Enter city name",
       },
     ],
-    8: [
-      // Partnership Agreement
-      {
-        name: "partner_a_name",
-        label: "Partner A Name",
-        type: "text",
-        required: true,
-        placeholder: "Enter Partner A name",
-      },
-      {
-        name: "partner_a_address",
-        label: "Partner A Address",
-        type: "textarea",
-        required: true,
-        placeholder: "Enter Partner A address",
-      },
-      {
-        name: "partner_b_name",
-        label: "Partner B Name",
-        type: "text",
-        required: true,
-        placeholder: "Enter Partner B name",
-      },
-      {
-        name: "partner_b_address",
-        label: "Partner B Address",
-        type: "textarea",
-        required: true,
-        placeholder: "Enter Partner B address",
-      },
-      {
-        name: "firm_name",
-        label: "Firm Name",
-        type: "text",
-        required: true,
-        placeholder: "Enter partnership firm name",
-      },
-      {
-        name: "business_nature",
-        label: "Nature of Business",
-        type: "textarea",
-        required: true,
-        placeholder: "Describe the nature of business",
-      },
-      {
-        name: "capital_a",
-        label: "Partner A Capital (INR)",
-        type: "number",
-        required: true,
-        placeholder: "Enter Partner A capital contribution",
-      },
-      {
-        name: "capital_b",
-        label: "Partner B Capital (INR)",
-        type: "number",
-        required: true,
-        placeholder: "Enter Partner B capital contribution",
-      },
-    ],
   }
 
   return (
@@ -1133,334 +1372,39 @@ function getTemplateFields(template) {
 }
 
 function generateTemplateDocument(template, formData) {
-  const templates = {
-    1: generateNDADocument,
-    2: generateServiceAgreement,
-    4: generateRentalAgreement,
-    8: generatePartnershipAgreement,
-  }
-
-  const generator = templates[template.id] || generateGenericDocument
-  return generator(formData)
-}
-
-// Updated document generators with professional formatting
-function generateNDADocument(data) {
+  // This is a simplified version for the dashboard
   const currentDate = new Date().toLocaleDateString("en-GB")
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">NON-DISCLOSURE AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Disclosing Party:</strong> ${data.disclosing_party || "[Name]"}, ${data.disclosing_address || "[Address]"}</p>
-        <p style="margin: 10px 0;"><strong>Receiving Party:</strong> ${data.receiving_party || "[Name]"}, ${data.receiving_address || "[Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Purpose:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Disclosing Party agrees to share certain confidential information with the Receiving Party solely for the purpose of <strong>${data.purpose || "[Project/Purpose]"}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Confidential Information:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Includes, but is not limited to: business plans, financial data, customer lists, trade secrets, etc.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Obligation:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Receiving Party shall not disclose, reproduce, or use any confidential information for any purpose other than the one stated above.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Term:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This Agreement remains in effect for a period of <strong>${data.duration || "[X]"} Years</strong> from the date of execution.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Return or Destruction:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Upon termination, all confidential materials must be returned or destroyed.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Governing Law:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This agreement is governed by the laws of India.
-        </p>
-      </div>
-
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 40px;">IN WITNESS WHEREOF, the parties have executed this agreement.</p>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Disclosing Party)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Receiving Party)</p>
-          </div>
-        </div>
-      </div>
+  const governmentSeal = template.needsGovernmentSeal
+    ? `
+    <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+      <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
     </div>
   `
-}
-
-function generateServiceAgreement(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
+    : ""
 
   return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">SERVICE AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Client:</strong> ${data.client_name || "[Client Name]"}, ${data.client_address || "[Client Address]"}</p>
-        <p style="margin: 10px 0;"><strong>Service Provider:</strong> ${data.service_provider || "[Service Provider Name]"}, ${data.provider_address || "[Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Scope of Services:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Service Provider agrees to provide the following services: <strong>${data.services_description || "[Describe Services]"}</strong>.
+    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; color: #000; background: #fff; border: 3px solid #000; padding: 40px; margin: 20px; position: relative;">
+      ${governmentSeal}
+      <div style="text-align: center; margin-bottom: 30px; border-bottom: 3px double #000; padding-bottom: 20px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); margin: -40px -40px 30px -40px; padding: 30px 40px 20px 40px;">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 ${template.name.toUpperCase()} 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Government of India
         </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Duration:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The agreement is valid from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${data.end_date || "[End Date]"}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Payment Terms:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Client shall pay INR <strong>${data.payment_amount || "[Amount]"}</strong> for the services, payable <strong>${data.payment_terms || "[Monthly/One-time]"}</strong> upon invoice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Confidentiality:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Service Provider shall keep all client information confidential.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Termination:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Either party may terminate this agreement with 30 days written notice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Governing Law:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This Agreement shall be governed by the laws of India.
-        </p>
-      </div>
-
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 40px;">Signed:</p>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Client)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Service Provider)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
-}
-
-function generateRentalAgreement(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-  const endDate = data.start_date
-    ? new Date(
-      new Date(data.start_date).getTime() + Number.parseInt(data.lease_duration || 12) * 30 * 24 * 60 * 60 * 1000,
-    ).toLocaleDateString("en-GB")
-    : "[End Date]"
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">RESIDENTIAL LEASE AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> at <strong>${data.city || "[City]"}, State</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Lessor:</strong> ${data.landlord_name || "[Landlord Name]"}, residing at ${data.landlord_address || "[Landlord Address]"}</p>
-        <p style="margin: 10px 0;"><strong>AND</strong></p>
-        <p style="margin: 10px 0;"><strong>Lessee:</strong> ${data.tenant_name || "[Tenant Name]"}, residing at ${data.tenant_address || "[Tenant Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Premises & Term:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The lessor agrees to lease the property at <strong>${data.property_address || "[Property Address]"}</strong> to the lessee for a period of <strong>${data.lease_duration || "[Lease Duration]"} months</strong>, starting from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${endDate}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Rent & Security Deposit:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The monthly rent shall be INR <strong>${data.rent_amount || "[Rent Amount]"}</strong>, payable on or before the 5th of each month. A refundable security deposit of INR <strong>${data.security_deposit || "[Deposit Amount]"}</strong> shall be paid at the time of agreement signing.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Maintenance & Utilities:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The tenant shall bear all charges for electricity, water, and other utilities. Minor repairs shall be carried out by the tenant. Major repairs due to natural wear and tear shall be handled by the landlord.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Use of Premises:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The premises shall be used only for residential purposes. No sub-letting is allowed without the written consent of the landlord.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Entry & Inspection:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The landlord reserves the right to inspect the premises with a 24-hour prior written notice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Termination:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Either party may terminate this agreement with one month's written notice. Early termination by tenant will result in forfeiture of the deposit.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">7. Governing Law:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This agreement is governed under the Indian Contract Act, 1872 and the Model Tenancy Act, 2019.
-        </p>
-      </div>
-
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 40px;">IN WITNESS WHEREOF, both parties have signed this agreement on the date mentioned above.</p>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Landlord Signature)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Tenant Signature)</p>
-          </div>
-        </div>
-
-        <div style="margin-top: 40px;">
-          <p style="font-weight: bold; margin-bottom: 20px;">Witnesses:</p>
-          <div style="display: flex; justify-content: space-between;">
-            <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-              <p style="margin: 5px 0;">1. ________________________</p>
-            </div>
-            <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-              <p style="margin: 5px 0;">2. ________________________</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
-}
-
-function generatePartnershipAgreement(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">PARTNERSHIP AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Partner A:</strong> ${data.partner_a_name || "[Name]"}, ${data.partner_a_address || "[Address]"}</p>
-        <p style="margin: 10px 0;"><strong>Partner B:</strong> ${data.partner_b_name || "[Name]"}, ${data.partner_b_address || "[Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Name & Purpose:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The partnership shall operate under the name <strong>${data.firm_name || "[Firm Name]"}</strong> for the purpose of <strong>${data.business_nature || "[Nature of Business]"}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Capital Contribution:</h3>
-        <div style="margin-left: 20px;">
-          <p>Partner A - INR <strong>${data.capital_a || "[Amount]"}</strong></p>
-          <p>Partner B - INR <strong>${data.capital_b || "[Amount]"}</strong></p>
-        </div>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Profit Sharing:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Profits and losses will be shared equally unless agreed otherwise.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Duties & Roles:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Each partner shall have equal rights in the management and shall work towards business growth.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Termination:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The partnership may be dissolved by mutual consent or due to withdrawal, death, or insolvency.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Jurisdiction:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This agreement is governed under the Indian Partnership Act, 1932.
-        </p>
-      </div>
-
-      <div style="margin-top: 80px;">
-        <div style="display: flex; justify-content: space-between;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Partner A)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Partner B)</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  `
-}
-
-function generateGenericDocument(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">LEGAL DOCUMENT</h1>
       </div>
       
       <p style="margin-bottom: 25px; text-align: justify;">
-        This is a professional legal document template. Please customize according to your specific requirements.
+        This document was generated on <strong>${currentDate}</strong>.
       </p>
       
       <div style="margin: 30px 0;">
-        ${Object.entries(data)
-      .map(
-        ([key, value]) =>
-          `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
-      )
-      .join("")}
+        ${Object.entries(formData)
+          .map(
+            ([key, value]) =>
+              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
+          )
+          .join("")}
       </div>
       
       <div style="margin-top: 60px; text-align: center;">
@@ -1468,6 +1412,90 @@ function generateGenericDocument(data) {
         <div style="margin-top: 50px;">
           <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
           <p style="margin: 5px 0; font-weight: bold;">Signature</p>
+        </div>
+      </div>
+    </div>
+  `
+}
+
+function getTemplatePreview(template) {
+  const governmentStyle = `
+    font-family: 'Times New Roman', serif; 
+    line-height: 1.8; 
+    color: #000; 
+    background: #fff;
+    border: 3px solid #000;
+    padding: 40px;
+    margin: 20px;
+    position: relative;
+  `
+
+  const headerStyle = `
+    text-align: center; 
+    margin-bottom: 30px; 
+    border-bottom: 3px double #000; 
+    padding-bottom: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    margin: -40px -40px 30px -40px;
+    padding: 30px 40px 20px 40px;
+  `
+
+  const sectionStyle = `
+    margin: 20px 0; 
+    padding: 15px 0; 
+    border-bottom: 1px solid #ccc;
+  `
+
+  const signatureStyle = `
+    margin-top: 60px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  `
+
+  const getOfficialSeal = (needsSeal) => {
+    if (!needsSeal) return ""
+    return `
+      <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+        <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+    `
+  }
+
+  // Simplified preview for dashboard
+  return `
+    <div style="${governmentStyle}">
+      ${getOfficialSeal(template.needsGovernmentSeal)}
+      <div style="${headerStyle}">
+        <h1 style="font-size: 28px; font-weight: bold; margin: 0; letter-spacing: 3px; text-transform: uppercase;">
+          🇮🇳 ${template.name.toUpperCase()} 🇮🇳
+        </h1>
+        <p style="margin: 10px 0 0 0; font-size: 14px; font-style: italic;">
+          Government of India
+        </p>
+      </div>
+      <p style="text-align: justify; margin: 20px 0;">
+        This is a preview of the ${template.name} template. Use the template editor to fill in your specific details and generate the complete document.
+      </p>
+      
+      <div style="${sectionStyle}">
+        <h3 style="font-size: 16px; font-weight: bold; text-decoration: underline;">DOCUMENT DETAILS:</h3>
+        <p style="margin-left: 20px;">
+          <strong>Type:</strong> ${template.type}<br>
+          <strong>Complexity:</strong> ${template.complexity}<br>
+          <strong>Fields to fill:</strong> ${template.fields}<br>
+          <strong>Official Seal Required:</strong> ${template.needsGovernmentSeal ? "Yes" : "No"}
+        </p>
+      </div>
+      
+      <div style="${signatureStyle}">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTY A)</p>
+        </div>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTY B)</p>
         </div>
       </div>
     </div>
