@@ -389,25 +389,25 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Documents",
-              value: mockStats.totalDocuments,
+              value: stats.totalDocuments,
               icon: FileText,
               color: "text-blue-600",
             },
             {
               label: "High Risk",
-              value: mockStats.highRiskDocuments,
+              value: stats.highRiskDocuments,
               icon: AlertTriangle,
               color: "text-red-600",
             },
             {
               label: "Avg Risk Score",
-              value: mockStats.avgRiskScore,
+              value: stats.avgRiskScore,
               icon: TrendingUp,
               color: "text-yellow-600",
             },
             {
               label: "This Month",
-              value: mockStats.documentsThisMonth,
+              value: stats.documentsThisMonth,
               icon: Calendar,
               color: "text-green-600",
             },
