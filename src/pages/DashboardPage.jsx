@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
+import { Printer } from "lucide-react"
 import { motion } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -56,46 +57,51 @@ import {
 import { Link } from "react-router-dom"
 
 // Mock data
-// const mockDocuments = [
-//   {
-//     id: "1",
-//     name: "Service Agreement - TechCorp.pdf",
-//     type: "Service Agreement",
-//     status: "analyzed",
-//     riskScore: 72,
-//     uploadDate: "2024-01-15",
-//     size: "2.4 MB",
-//   },
-//   {
-//     id: "2",
-//     name: "NDA - StartupXYZ.docx",
-//     type: "NDA",
-//     status: "processing",
-//     riskScore: null,
-//     uploadDate: "2024-01-14",
-//     size: "1.2 MB",
-//   },
-//   {
-//     id: "3",
-//     name: "Employment Contract - Jane Doe.pdf",
-//     type: "Employment Contract",
-//     status: "analyzed",
-//     riskScore: 45,
-//     uploadDate: "2024-01-13",
-//     size: "3.1 MB",
-//   },
-//   {
-//     id: "4",
-//     name: "Licensing Agreement - SoftwareCo.pdf",
-//     type: "Licensing Agreement",
-//     status: "analyzed",
-//     riskScore: 89,
-//     uploadDate: "2024-01-12",
-//     size: "4.7 MB",
-//   },
-// ]
+const mockDocuments = [
+  {
+    id: "1",
+    name: "Service Agreement - TechCorp.pdf",
+    type: "Service Agreement",
+    status: "analyzed",
+    riskScore: 72,
+    uploadDate: "2024-01-15",
+    size: "2.4 MB",
+  },
+  {
+    id: "2",
+    name: "NDA - StartupXYZ.docx",
+    type: "NDA",
+    status: "processing",
+    riskScore: null,
+    uploadDate: "2024-01-14",
+    size: "1.2 MB",
+  },
+  {
+    id: "3",
+    name: "Employment Contract - Jane Doe.pdf",
+    type: "Employment Contract",
+    status: "analyzed",
+    riskScore: 45,
+    uploadDate: "2024-01-13",
+    size: "3.1 MB",
+  },
+  {
+    id: "4",
+    name: "Licensing Agreement - SoftwareCo.pdf",
+    type: "Licensing Agreement",
+    status: "analyzed",
+    riskScore: 89,
+    uploadDate: "2024-01-12",
+    size: "4.7 MB",
+  },
+]
 
-
+const mockStats = {
+  totalDocuments: 24,
+  highRiskDocuments: 3,
+  avgRiskScore: 62,
+  documentsThisMonth: 8,
+}
 
 // Enhanced templates data for dashboard - Keep only 4 main templates
 const dashboardTemplates = [
@@ -164,62 +170,6 @@ const complexityColors = {
 }
 
 export default function DashboardPage() {
-  const [documents, setDocuments] = useState([])
-  const [stats, setStats] = useState({})
-  const [riskDistribution, setRiskDistribution] = useState({
-    low: 0,
-    medium: 0,
-    high: 0,
-  });
-
-  const [typeCounts, setTypeCounts] = useState({});
-
-
-  useEffect(() => {
-    const storedDocs = JSON.parse(localStorage.getItem("documents")) || [];
-    setDocuments(storedDocs);
-
-
-
-    // Compute stats here
-    const totalDocuments = storedDocs.length;
-    const highRiskDocuments = storedDocs.filter(doc => doc.riskScore >= 70).length;
-
-    const avgRiskScore =
-      storedDocs.reduce((acc, doc) => acc + doc.riskScore, 0) /
-      (storedDocs.length || 1);
-
-    const documentsThisMonth = storedDocs.filter(doc => {
-      const completedDate = new Date(doc.completedAt);
-      const now = new Date();
-      return (
-        completedDate.getFullYear() === now.getFullYear() &&
-        completedDate.getMonth() === now.getMonth()
-      );
-    }).length;
-    const risk = {
-      low: storedDocs.filter((doc) => doc.riskScore <= 40).length,
-      medium: storedDocs.filter((doc) => doc.riskScore > 40 && doc.riskScore <= 70).length,
-      high: storedDocs.filter((doc) => doc.riskScore > 70).length,
-    };
-    setRiskDistribution(risk);
-
-    // Compute document type counts
-    const types = storedDocs.reduce((acc, doc) => {
-      acc[doc.type] = (acc[doc.type] || 0) + 1;
-      return acc;
-    }, {});
-    setTypeCounts(types);
-
-    setStats({
-      totalDocuments,
-      highRiskDocuments,
-      avgRiskScore: Math.round(avgRiskScore),
-      documentsThisMonth,
-    });
-
-  }, []);
-
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -255,12 +205,28 @@ export default function DashboardPage() {
     return "text-green-600"
   }
 
-  const filteredDocuments = mockDocuments.filter((doc) => {
+  const filteredDocuments = documents.filter((doc) => {
     const matchesSearch =
       doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       doc.type.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesFilter = filterType === "all" || doc.type.toLowerCase().includes(filterType.toLowerCase())
-    return matchesSearch && matchesFilter
+
+    const matchesType = filterType === "all" || doc.type.toLowerCase().includes(filterType.toLowerCase())
+
+    const matchesStatus = statusFilter === "all" || doc.status === statusFilter
+
+    const matchesRisk =
+      riskFilter === "all" ||
+      (riskFilter === "low" && doc.riskScore && doc.riskScore < 40) ||
+      (riskFilter === "medium" && doc.riskScore && doc.riskScore >= 40 && doc.riskScore < 70) ||
+      (riskFilter === "high" && doc.riskScore && doc.riskScore >= 70)
+
+    const matchesDate =
+      dateFilter === "all" ||
+      (dateFilter === "today" && new Date(doc.uploadDate).toDateString() === new Date().toDateString()) ||
+      (dateFilter === "week" && new Date(doc.uploadDate) > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)) ||
+      (dateFilter === "month" && new Date(doc.uploadDate) > new Date(Date.now() - 30 * 24 * 60 * 60 * 1000))
+
+    return matchesSearch && matchesType && matchesStatus && matchesRisk && matchesDate
   })
 
   const handleUseTemplate = (template) => {
@@ -365,25 +331,25 @@ export default function DashboardPage() {
           {[
             {
               label: "Total Documents",
-              value: stats.totalDocuments,
+              value: mockStats.totalDocuments,
               icon: FileText,
               color: "text-blue-600",
             },
             {
               label: "High Risk",
-              value: stats.highRiskDocuments,
+              value: mockStats.highRiskDocuments,
               icon: AlertTriangle,
               color: "text-red-600",
             },
             {
               label: "Avg Risk Score",
-              value: stats.avgRiskScore,
+              value: mockStats.avgRiskScore,
               icon: TrendingUp,
               color: "text-yellow-600",
             },
             {
               label: "This Month",
-              value: stats.documentsThisMonth,
+              value: mockStats.documentsThisMonth,
               icon: Calendar,
               color: "text-green-600",
             },
@@ -556,44 +522,46 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((file, index) => (
+                  {filteredDocuments.map((doc) => (
                     <div
-                      key={index}
+                      key={doc.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center space-x-4 flex-1">
                         <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                           <FileText className="w-5 h-5 text-blue-600" />
                         </div>
-                        <div>
-                          <h3 className="font-medium text-slate-800">{doc.name}</h3>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-medium text-slate-800 truncate">{doc.name}</h3>
                           <div className="flex items-center space-x-4 mt-1">
                             <Badge variant="secondary" className="text-xs">
-                              {file.type}
+                              {doc.type}
                             </Badge>
-                            <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
+                            <Badge className={`text-xs ${getStatusColor(doc.status)}`}>{doc.status}</Badge>
                             <span className="text-xs text-slate-500">
-                              {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
+                              {doc.size} • {new Date(doc.uploadDate).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-4">
-                        {file.riskScore && (
+                        {doc.riskScore && (
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
-                              Risk: {file.riskScore}/100
+                            <div className={`text-sm font-medium ${getRiskColor(doc.riskScore)}`}>
+                              Risk: {doc.riskScore}/100
                             </div>
                           </div>
                         )}
                         <div className="flex items-center space-x-2">
-                          {file.status === "completed" ? (
+                          {doc.status === "analyzed" ? (
                             <>
                               <Link to={`/analysis/${doc.id}`}>
-                                <Button size="sm">View Analysis</Button>
+                                <Button size="sm" className="h-8">
+                                  View Analysis
+                                </Button>
                               </Link>
-                              <Link to={`/compare?original=${file.id}`}>
+                              <Link to={`/compare?original=${doc.id}`}>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -762,104 +730,157 @@ export default function DashboardPage() {
             </motion.div>
           </TabsContent>
 
-          <TabsContent value="analytics" className="space-y-6">
-            <div className="grid md:grid-cols-2 gap-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Risk Distribution</CardTitle>
-                  <CardDescription>Risk levels across your documents</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Low Risk (0-40)</span>
-                      <span className="text-sm font-medium">8 documents</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
-                      <span className="text-sm font-medium">13 documents</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">High Risk (71-100)</span>
-                      <span className="text-sm font-medium">3 documents</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle>Document Types</CardTitle>
-                  <CardDescription>Breakdown by document category</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Service Agreements</span>
-                      <span className="text-sm font-medium">9</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">NDAs</span>
-                      <span className="text-sm font-medium">7</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Employment Contracts</span>
-                      <span className="text-sm font-medium">5</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-600">Licensing Agreements</span>
-                      <span className="text-sm font-medium">3</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="settings" className="space-y-6">
+          <TabsContent value="analytics">
             <Card>
               <CardHeader>
-                <CardTitle>Account Settings</CardTitle>
-                <CardDescription>Manage your LegalMind.AI preferences</CardDescription>
+                <CardTitle>Analytics</CardTitle>
+                <CardDescription>View insights and statistics about your legal documents.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 mb-2">Notification Preferences</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">
-                        Email notifications for document analysis completion
-                      </span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">High-risk document alerts</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm text-slate-600">Weekly summary reports</span>
-                    </label>
-                  </div>
+              <CardContent>
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-slate-600">Analytics features coming soon...</p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-                <div>
-                  <h3 className="text-sm font-medium text-slate-800 mb-2">Default Analysis Settings</h3>
-                  <div className="space-y-2">
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">Auto-generate risk assessment</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" defaultChecked />
-                      <span className="text-sm text-slate-600">Extract key entities automatically</span>
-                    </label>
-                    <label className="flex items-center space-x-2">
-                      <input type="checkbox" className="rounded" />
-                      <span className="text-sm text-slate-600">Generate negotiation suggestions</span>
-                    </label>
-                  </div>
+          <TabsContent value="settings">
+            <Card>
+              <CardHeader>
+                <CardTitle>Settings</CardTitle>
+                <CardDescription>Manage your account and preferences.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center justify-center h-64">
+                  <p className="text-slate-600">Settings features coming soon...</p>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+
+      {/* Template Preview Modal */}
+      {selectedTemplate && showPreview && (
+        <TemplatePreview
+          template={selectedTemplate}
+          onClose={() => {
+            setSelectedTemplate(null)
+            setShowPreview(false)
+          }}
+          onUse={() => {
+            setShowPreview(false)
+          }}
+        />
+      )}
+
+      {/* Template Editor Modal */}
+      {selectedTemplate && !showPreview && (
+        <TemplateEditor
+          template={selectedTemplate}
+          onClose={() => setSelectedTemplate(null)}
+          onDocumentGenerated={handleDocumentGenerated}
+        />
+      )}
+
+      {/* Rating Dialog */}
+      <Dialog open={showRatingDialog} onOpenChange={setShowRatingDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Rate Your Experience</DialogTitle>
+            <DialogDescription>
+              How was your experience with this template? Your feedback helps us improve.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="flex justify-center space-x-2">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button key={star} onClick={() => setUserRating(star)} className="transition-colors">
+                  <StarIcon
+                    className={`w-8 h-8 ${star <= userRating ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                  />
+                </button>
+              ))}
+            </div>
+            <textarea
+              placeholder="Share your thoughts (optional)"
+              value={ratingComment}
+              onChange={(e) => setRatingComment(e.target.value)}
+              className="w-full p-3 border border-slate-300 rounded-lg resize-none"
+              rows={3}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowRatingDialog(false)}>
+              Skip
+            </Button>
+            <Button onClick={submitRating} disabled={userRating === 0}>
+              Submit Rating
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              Confirm Deletion
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this document? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="p-4 border rounded-lg bg-slate-50">
+            <p className="font-medium text-slate-800">{documentToDelete?.name}</p>
+            <p className="text-sm text-slate-500 mt-1">
+              {documentToDelete?.type} • {documentToDelete?.size} • Uploaded on{" "}
+              {new Date(documentToDelete?.uploadDate || "").toLocaleDateString()}
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => documentToDelete && handleDeleteDocument(documentToDelete.id)}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete Document
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  )
+}
+
+// Template Preview Component
+function TemplatePreview({ template, onClose, onUse }) {
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+        <div className="p-6 border-b border-slate-200">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-slate-800">{template.name} - Preview</h2>
+              <p className="text-slate-600">Sample template with placeholder content</p>
+            </div>
+            <div className="flex space-x-2">
+              <Button onClick={onUse} className="bg-blue-600 hover:bg-blue-700">
+                <Edit3 className="w-4 h-4 mr-2" />
+                Use This Template
+              </Button>
+              <Button variant="outline" onClick={onClose}>
+                ✕
+              </Button>
+            </div>
+          </div>
+        </div>
 
         <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
           <div className="bg-white border border-slate-200 rounded-lg p-8 shadow-sm">
@@ -1340,166 +1361,49 @@ function generateTemplateDocument(template, formData) {
   `
 }
 
-function generateServiceAgreement(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">SERVICE AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Client:</strong> ${data.client_name || "[Client Name]"}, ${data.client_address || "[Client Address]"}</p>
-        <p style="margin: 10px 0;"><strong>Service Provider:</strong> ${data.service_provider || "[Service Provider Name]"}, ${data.provider_address || "[Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Scope of Services:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Service Provider agrees to provide the following services: <strong>${data.services_description || "[Describe Services]"}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Duration:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The agreement is valid from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${data.end_date || "[End Date]"}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Payment Terms:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Client shall pay INR <strong>${data.payment_amount || "[Amount]"}</strong> for the services, payable <strong>${data.payment_terms || "[Monthly/One-time]"}</strong> upon invoice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Confidentiality:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The Service Provider shall keep all client information confidential.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Termination:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Either party may terminate this agreement with 30 days written notice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Governing Law:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This Agreement shall be governed by the laws of India.
-        </p>
-      </div>
-
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 40px;">Signed:</p>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Client)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Service Provider)</p>
-          </div>
-        </div>
-      </div>
-    </div>
+function getTemplatePreview(template) {
+  const governmentStyle = `
+    font-family: 'Times New Roman', serif; 
+    line-height: 1.8; 
+    color: #000; 
+    background: #fff;
+    border: 3px solid #000;
+    padding: 40px;
+    margin: 20px;
+    position: relative;
   `
-}
 
-function generateRentalAgreement(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-  const endDate = data.start_date
-    ? new Date(
-        new Date(data.start_date).getTime() + Number.parseInt(data.lease_duration || 12) * 30 * 24 * 60 * 60 * 1000,
-      ).toLocaleDateString("en-GB")
-    : "[End Date]"
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">RESIDENTIAL LEASE AGREEMENT</h1>
-      </div>
-
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This Agreement is made on <strong>${currentDate}</strong> at <strong>${data.city || "[City]"}, State</strong> between:
-      </p>
-
-      <div style="margin: 30px 0; padding: 20px; background: #f9f9f9; border-left: 4px solid #333;">
-        <p style="margin: 10px 0;"><strong>Lessor:</strong> ${data.landlord_name || "[Landlord Name]"}, residing at ${data.landlord_address || "[Landlord Address]"}</p>
-        <p style="margin: 10px 0;"><strong>AND</strong></p>
-        <p style="margin: 10px 0;"><strong>Lessee:</strong> ${data.tenant_name || "[Tenant Name]"}, residing at ${data.tenant_address || "[Tenant Address]"}</p>
-      </div>
-
-      <div style="margin: 30px 0;">
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">1. Premises & Term:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The lessor agrees to lease the property at <strong>${data.property_address || "[Property Address]"}</strong> to the lessee for a period of <strong>${data.lease_duration || "[Lease Duration]"} months</strong>, starting from <strong>${data.start_date || "[Start Date]"}</strong> to <strong>${endDate}</strong>.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">2. Rent & Security Deposit:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The monthly rent shall be INR <strong>${data.rent_amount || "[Rent Amount]"}</strong>, payable on or before the 5th of each month. A refundable security deposit of INR <strong>${data.security_deposit || "[Deposit Amount]"}</strong> shall be paid at the time of agreement signing.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">3. Maintenance & Utilities:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The tenant shall bear all charges for electricity, water, and other utilities. Minor repairs shall be carried out by the tenant. Major repairs due to natural wear and tear shall be handled by the landlord.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">4. Use of Premises:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The premises shall be used only for residential purposes. No sub-letting is allowed without the written consent of the landlord.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">5. Entry & Inspection:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          The landlord reserves the right to inspect the premises with a 24-hour prior written notice.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">6. Termination:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          Either party may terminate this agreement with one month's written notice. Early termination by tenant will result in forfeiture of the deposit.
-        </p>
-
-        <h3 style="font-size: 16px; font-weight: bold; margin: 25px 0 15px 0; border-bottom: 1px solid #ccc; padding-bottom: 5px;">7. Governing Law:</h3>
-        <p style="text-align: justify; margin-left: 20px;">
-          This agreement is governed under the Indian Contract Act, 1872 and the Model Tenancy Act, 2019.
-        </p>
-      </div>
-
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="font-weight: bold; margin-bottom: 40px;">IN WITNESS WHEREOF, both parties have signed this agreement on the date mentioned above.</p>
-        
-        <div style="display: flex; justify-content: space-between; margin-top: 50px;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Landlord Signature)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Tenant Signature)</p>
-          </div>
-        </div>
-
-        <div style="margin-top: 40px;">
-          <p style="font-weight: bold; margin-bottom: 20px;">Witnesses:</p>
-          <div style="display: flex; justify-content: space-between;">
-            <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-              <p style="margin: 5px 0;">1. ________________________</p>
-            </div>
-            <div style="width: 45%; text-align: center;">
-              <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-              <p style="margin: 5px 0;">2. ________________________</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+  const headerStyle = `
+    text-align: center; 
+    margin-bottom: 30px; 
+    border-bottom: 3px double #000; 
+    padding-bottom: 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    margin: -40px -40px 30px -40px;
+    padding: 30px 40px 20px 40px;
   `
-}
+
+  const sectionStyle = `
+    margin: 20px 0; 
+    padding: 15px 0; 
+    border-bottom: 1px solid #ccc;
+  `
+
+  const signatureStyle = `
+    margin-top: 60px; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  `
+
+  const getOfficialSeal = (needsSeal) => {
+    if (!needsSeal) return ""
+    return `
+      <div style="position: absolute; top: 20px; right: 20px; width: 100px; height: 100px;">
+        <img src="/images/government-seal.png" alt="Government Seal" style="width: 100%; height: 100%; object-fit: contain;" />
+      </div>
+    `
+  }
 
   // Simplified preview for dashboard
   return `
@@ -1526,50 +1430,15 @@ function generateRentalAgreement(data) {
           <strong>Official Seal Required:</strong> ${template.needsGovernmentSeal ? "Yes" : "No"}
         </p>
       </div>
-
-      <div style="margin-top: 80px;">
-        <div style="display: flex; justify-content: space-between;">
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Partner A)</p>
-          </div>
-          <div style="width: 45%; text-align: center;">
-            <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-            <p style="margin: 5px 0; font-weight: bold;">(Partner B)</p>
-          </div>
+      
+      <div style="${signatureStyle}">
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTY A)</p>
         </div>
-      </div>
-    </div>
-  `
-}
-
-function generateGenericDocument(data) {
-  const currentDate = new Date().toLocaleDateString("en-GB")
-
-  return `
-    <div style="font-family: 'Times New Roman', serif; line-height: 1.8; max-width: 800px; margin: 0 auto; padding: 40px; color: #000;">
-      <div style="text-align: center; margin-bottom: 40px; border-bottom: 2px solid #000; padding-bottom: 20px;">
-        <h1 style="font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">LEGAL DOCUMENT</h1>
-      </div>
-      
-      <p style="margin-bottom: 25px; text-align: justify;">
-        This is a professional legal document template. Please customize according to your specific requirements.
-      </p>
-      
-      <div style="margin: 30px 0;">
-        ${Object.entries(data)
-          .map(
-            ([key, value]) =>
-              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
-          )
-          .join("")}
-      </div>
-      
-      <div style="margin-top: 60px; text-align: center;">
-        <p style="margin-bottom: 20px;">Date: <strong>${currentDate}</strong></p>
-        <div style="margin-top: 50px;">
-          <div style="border-bottom: 1px solid #000; width: 200px; margin: 0 auto 10px;"></div>
-          <p style="margin: 5px 0; font-weight: bold;">Signature</p>
+        <div style="text-align: center; width: 45%;">
+          <div style="border-bottom: 2px solid #000; width: 200px; margin: 0 auto 10px;"></div>
+          <p style="font-weight: bold;">(PARTY B)</p>
         </div>
       </div>
     </div>
