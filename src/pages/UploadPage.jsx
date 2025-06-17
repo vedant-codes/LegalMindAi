@@ -37,11 +37,13 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
 }
 
   const pollFileStatus = (fileServerId, fileId) => {
-  let progress = 0;
+  
   const interval = setInterval(async () => {
     try {
       const statusResponse = await axios.get(`http://localhost:3000/api/status/${fileServerId}`);
       const status = statusResponse.data.status;
+      const progress = statusResponse.data.progress;
+      console.log(progress)
 
       if (status === "completed") {
         clearInterval(interval);
@@ -52,9 +54,9 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
         const summaryResponse = await axios.post("http://localhost:3000/api/generate-summary", {
           prompt: extractedText,
         });
-        console.log(summaryResponse.data)
+        
 
-        const type = summaryResponse.data.type || "Summary"; // or adjust based on your API
+        const type = summaryResponse.data.result.type || "Summary"; // or adjust based on your API
 
         setFiles((prev) =>
           prev.map((f) =>
@@ -65,20 +67,23 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
                   progress: 100,
                   type: type,
                   analysis: summaryResponse.data.result,
+                  riskScore:summaryResponse.data.result.riskScore,
+                  uploadDate: Date.now()
                 }
               : f
           )
         );
+        await axios.delete(`http://localhost:3000/api/document/${fileServerId}`);
         
       } else if (status === "processing") {
         // Animate progress while processing
-        progress = Math.min(progress + Math.random() * 20, 95);
+        
         setFiles((prev) =>
           prev.map((f) =>
             f.id === fileId
               ? {
                   ...f,
-                  progress: Math.floor(progress),
+                  progress: Number(progress),
                   status: "processing",
                 }
               : f
@@ -92,7 +97,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
         prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f))
       );
     }
-  }, 3000);
+  }, 1000);
 };
 
 
@@ -105,7 +110,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
   const newFiles = acceptedFiles.map((file) => ({
     id: Math.random().toString(36).substr(2, 9),
     name: file.name,
-    size: file.size,
+    size: formatFileSize(file.size),
     status: "uploading",
     progress: 0,
     file, // keep actual file here
@@ -129,25 +134,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
     maxSize: 10 * 1024 * 1024, // 10MB
   })
 
-  const simulateFileProcessing = (fileId) => {
-    let progress = 0
-    const interval = setInterval(() => {
-      progress += Math.random() * 15
-      if (progress >= 100) {
-        progress = 100
-        clearInterval(interval)
-        setFiles((prev) =>
-          prev.map((f) => (f.id === fileId ? { ...f, status: "completed", progress: 100, type: "NDA" } : f)),
-        )
-      } else {
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId ? { ...f, progress, status: progress > 50 ? "processing" : "uploading" } : f,
-          ),
-        )
-      }
-    }, 200)
-  }
+
 
   const removeFile = (fileId) => {
     setFiles((prev) => prev.filter((f) => f.id !== fileId))
@@ -163,25 +150,27 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
 
   const completedFiles = files.filter((f) => f.status === "completed")
   useEffect(() => {
-  const completedFiles = files.filter(f => f.status === "completed" && !f.savedToLocal)
+  const filesToSave = files.filter(f =>
+    (f.status === "completed" || f.status === "processing") && !f.savedToLocal
+  )
 
-  if (completedFiles.length > 0) {
+  if (filesToSave.length > 0) {
     const existingDocs = JSON.parse(localStorage.getItem("documents")) || []
-    const newDocs = completedFiles.map(f => ({ ...f, savedToLocal: true }))
+    const updatedDocs = [...existingDocs, ...filesToSave.map(f => ({ ...f, savedToLocal: true }))]
 
-    const updatedDocs = [...existingDocs, ...newDocs]
     localStorage.setItem("documents", JSON.stringify(updatedDocs))
 
-    // Mark them as saved to avoid repeated saves
-    setFiles((prev) =>
-      prev.map((f) =>
-        completedFiles.find(c => c.id === f.id)
+    // Mark them as saved in state to avoid resaving later
+    setFiles(prev =>
+      prev.map(f =>
+        filesToSave.find(c => c.id === f.id)
           ? { ...f, savedToLocal: true }
           : f
       )
     )
   }
 }, [files])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -313,7 +302,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
                         <span className="text-xs text-slate-500">{file.progress}%</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                        {formatFileSize(file.size)} • {file.status}
+                        {(file.size)} • {file.status}
                       </p>
                     </div>
                   </div>
