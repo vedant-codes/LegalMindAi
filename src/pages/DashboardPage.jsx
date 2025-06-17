@@ -170,6 +170,9 @@ const complexityColors = {
 }
 
 export default function DashboardPage() {
+
+  const [documents, setDocuments] = useState([])
+  const [stats, setStats] = useState({})
   const [searchTerm, setSearchTerm] = useState("")
   const [filterType, setFilterType] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -181,9 +184,63 @@ export default function DashboardPage() {
   const [showRatingDialog, setShowRatingDialog] = useState(false)
   const [userRating, setUserRating] = useState(0)
   const [ratingComment, setRatingComment] = useState("")
-  const [documents, setDocuments] = useState(mockDocuments)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [documentToDelete, setDocumentToDelete] = useState(null)
+  const [riskDistribution, setRiskDistribution] = useState({
+    low: 0,
+    medium: 0,
+    high: 0,
+  });
+
+  const [typeCounts, setTypeCounts] = useState({});
+
+
+  useEffect(() => {
+    const storedDocs = JSON.parse(localStorage.getItem("documents")) || [];
+    setDocuments(storedDocs);
+
+
+
+    // Compute stats here
+    const totalDocuments = storedDocs.length;
+    const highRiskDocuments = storedDocs.filter(doc => doc.riskScore >= 70).length;
+
+    const avgRiskScore =
+      storedDocs.reduce((acc, doc) => acc + doc.riskScore, 0) /
+      (storedDocs.length || 1);
+
+    const documentsThisMonth = storedDocs.filter(doc => {
+      const completedDate = new Date(doc.uploadDate);
+      const now = new Date();
+      return (
+        completedDate.getFullYear() === now.getFullYear() &&
+        completedDate.getMonth() === now.getMonth()
+      );
+    }).length;
+    const risk = {
+      low: storedDocs.filter((doc) => doc.riskScore <= 40).length,
+      medium: storedDocs.filter((doc) => doc.riskScore > 40 && doc.riskScore <= 70).length,
+      high: storedDocs.filter((doc) => doc.riskScore > 70).length,
+    };
+    setRiskDistribution(risk);
+
+    // Compute document type counts
+    const types = storedDocs.reduce((acc, doc) => {
+      acc[doc.type] = (acc[doc.type] || 0) + 1;
+      return acc;
+    }, {});
+    setTypeCounts(types);
+
+    setStats({
+      totalDocuments,
+      highRiskDocuments,
+      avgRiskScore: Math.round(avgRiskScore),
+      documentsThisMonth,
+    });
+
+  }, []);
+
+
 
   const getStatusColor = (status) => {
     switch (status) {
