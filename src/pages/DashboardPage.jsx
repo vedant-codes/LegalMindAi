@@ -615,7 +615,7 @@ export default function DashboardPage() {
                         <div className="flex items-center space-x-2">
                           {file.status === "completed" ? (
                             <>
-                              <Link to={`/analysis/${file.id}` state={{ file }}}>
+                              <Link to={`/analysis/${file.id}`} state={{ file }}>
                                 <Button size="sm" className="h-8">
                                   View Analysis
                                 </Button>
@@ -648,26 +648,26 @@ export default function DashboardPage() {
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleModifyDocument(file.id)}>
+                              <DropdownMenuItem onClick={() => handleModifyDocument(doc.id)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Modify
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicateDocument(file.id)}>
+                              <DropdownMenuItem onClick={() => handleDuplicateDocument(doc.id)}>
                                 <Copy className="w-4 h-4 mr-2" />
                                 Duplicate
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShareDocument(file.id)}>
+                              <DropdownMenuItem onClick={() => handleShareDocument(doc.id)}>
                                 <Share2 className="w-4 h-4 mr-2" />
                                 Share
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleArchiveDocument(file.id)}>
+                              <DropdownMenuItem onClick={() => handleArchiveDocument(doc.id)}>
                                 <Archive className="w-4 h-4 mr-2" />
                                 Archive
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setDocumentToDelete(file)
+                                  setDocumentToDelete(doc)
                                   setShowDeleteDialog(true)
                                 }}
                                 className="text-red-600 focus:text-red-600"
