@@ -583,7 +583,7 @@ export default function DashboardPage() {
                 <div className="space-y-4">
                   {filteredDocuments.map((doc) => (
                     <div
-                      key={doc.id}
+                      key={file.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
                     >
                       <div className="flex items-center space-x-4 flex-1">
@@ -591,36 +591,36 @@ export default function DashboardPage() {
                           <FileText className="w-5 h-5 text-blue-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-slate-800 truncate">{doc.name}</h3>
+                          <h3 className="font-medium text-slate-800 truncate">{file.name}</h3>
                           <div className="flex items-center space-x-4 mt-1">
                             <Badge variant="secondary" className="text-xs">
-                              {doc.type}
+                              {file.type}
                             </Badge>
-                            <Badge className={`text-xs ${getStatusColor(doc.status)}`}>{doc.status}</Badge>
+                            <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
                             <span className="text-xs text-slate-500">
-                              {doc.size} • {new Date(doc.uploadDate).toLocaleDateString()}
+                              {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
                             </span>
                           </div>
                         </div>
                       </div>
 
                       <div className="flex items-center space-x-4">
-                        {doc.riskScore && (
+                        {file.riskScore && (
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${getRiskColor(doc.riskScore)}`}>
-                              Risk: {doc.riskScore}/100
+                            <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
+                              Risk: {file.riskScore}/100
                             </div>
                           </div>
                         )}
                         <div className="flex items-center space-x-2">
-                          {doc.status === "completed" ? (
+                          {file.status === "completed" ? (
                             <>
-                              <Link to={`/analysis/${doc.id}`}>
+                              <Link to={`/analysis/${file.id}` state={{ file }}}>
                                 <Button size="sm" className="h-8">
                                   View Analysis
                                 </Button>
                               </Link>
-                              <Link to={`/compare?original=${doc.id}`}>
+                              <Link to={`/compare?original=${file.id}`}>
                                 <Button
                                   size="sm"
                                   variant="outline"
@@ -648,19 +648,19 @@ export default function DashboardPage() {
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleModifyDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleModifyDocument(file.id)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Modify
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicateDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleDuplicateDocument(file.id)}>
                                 <Copy className="w-4 h-4 mr-2" />
                                 Duplicate
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShareDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleShareDocument(file.id)}>
                                 <Share2 className="w-4 h-4 mr-2" />
                                 Share
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleArchiveDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleArchiveDocument(file.id)}>
                                 <Archive className="w-4 h-4 mr-2" />
                                 Archive
                               </DropdownMenuItem>
