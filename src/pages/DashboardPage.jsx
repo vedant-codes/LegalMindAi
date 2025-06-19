@@ -246,7 +246,7 @@ export default function DashboardPage() {
 
   const getStatusColor = (status) => {
     switch (status) {
-      case "analyzed":
+      case "completed":
         return "bg-green-100 text-green-800"
       case "processing":
         return "bg-yellow-100 text-yellow-800"
@@ -613,7 +613,7 @@ export default function DashboardPage() {
                           </div>
                         )}
                         <div className="flex items-center space-x-2">
-                          {doc.status === "analyzed" ? (
+                          {doc.status === "completed" ? (
                             <>
                               <Link to={`/analysis/${doc.id}`}>
                                 <Button size="sm" className="h-8">
