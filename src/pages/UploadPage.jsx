@@ -73,7 +73,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
               : f
           )
         );
-        await axios.delete(`https://legalmindai-backend-production.up.railway.app/api/document/${fileServerId}`);
+        
         
       } else if (status === "processing") {
         // Animate progress while processing
