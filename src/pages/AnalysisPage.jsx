@@ -70,7 +70,7 @@ export default function AnalysisPage() {
     if (!question.trim()) return;
 
     try {
-      const res = await axios.post("http://localhost:3000/api/qna", {
+      const res = await axios.post("https://legalmindai-backend-production.up.railway.app/api/qna", {
         schema: file.analysis,
         prompt: question,
       });
@@ -154,7 +154,7 @@ const toggleListening = () => {
 
   const handleGenerateEmail = async () => {
   try {
-    const response = await axios.post("http://localhost:3000/api/negotiation", {
+    const response = await axios.post("https://legalmindai-backend-production.up.railway.app/api/negotiation", {
       tone: negotiationTone,
       schema: file.analysis,
     })
