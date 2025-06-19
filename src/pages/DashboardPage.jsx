@@ -667,7 +667,7 @@ export default function DashboardPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setDocumentToDelete(doc)
+                                  setDocumentToDelete(file)
                                   setShowDeleteDialog(true)
                                 }}
                                 className="text-red-600 focus:text-red-600"
