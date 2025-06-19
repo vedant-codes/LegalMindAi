@@ -19,7 +19,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
   formData.append("document", file)
 
   try {
-    const response = await axios.post("http://localhost:3000/api/upload", formData, {
+    const response = await axios.post("https://legalmindai-backend-production.up.railway.app/api/upload", formData, {
       headers: { "Content-Type": "multipart/form-data" },
     })
 
@@ -40,7 +40,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
   
   const interval = setInterval(async () => {
     try {
-      const statusResponse = await axios.get(`http://localhost:3000/api/status/${fileServerId}`);
+      const statusResponse = await axios.get(`https://legalmindai-backend-production.up.railway.app/api/status/${fileServerId}`);
       const status = statusResponse.data.status;
       const progress = statusResponse.data.progress;
       console.log(progress)
@@ -48,10 +48,10 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
       if (status === "completed") {
         clearInterval(interval);
 
-        const docResponse = await axios.get(`http://localhost:3000/api/document/${fileServerId}`);
+        const docResponse = await axios.get(`https://legalmindai-backend-production.up.railway.app/api/document/${fileServerId}`);
         const extractedText = docResponse.data.extractedText;
 
-        const summaryResponse = await axios.post("http://localhost:3000/api/generate-summary", {
+        const summaryResponse = await axios.post("https://legalmindai-backend-production.up.railway.app/api/generate-summary", {
           prompt: extractedText,
         });
         
@@ -73,7 +73,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
               : f
           )
         );
-        await axios.delete(`http://localhost:3000/api/document/${fileServerId}`);
+        await axios.delete(`https://legalmindai-backend-production.up.railway.app/api/document/${fileServerId}`);
         
       } else if (status === "processing") {
         // Animate progress while processing
