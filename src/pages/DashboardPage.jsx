@@ -581,7 +581,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((doc) => (
+                  {filteredDocuments.map((file) => (
                     <div
                       key={file.id}
                       className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
