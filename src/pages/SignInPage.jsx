@@ -8,7 +8,8 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Separator } from "../components/ui/separator"
 import { Brain, Mail, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react"
-import { Link,useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { ErrorPopup } from "../components/error-popup"
 
 export default function SignInPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -16,6 +17,8 @@ export default function SignInPage() {
     email: "",
     password: "",
   })
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
   const handleInputChange = (e) => {
@@ -23,27 +26,67 @@ export default function SignInPage() {
       ...formData,
       [e.target.name]: e.target.value,
     })
+    // Clear error when user starts typing
+    if (error) setError("")
   }
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle sign in logic here
-    console.log("Sign in:", formData)
-    navigate("/dashboard")
+    setIsLoading(true)
+    setError("")
+
+    try {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+
+      // Simulate validation
+      if (formData.email === "test@example.com" && formData.password === "password") {
+        navigate("/dashboard")
+      } else {
+        throw new Error("Invalid email or password. Please check your credentials and try again.")
+      }
+    } catch (err) {
+      setError(err.message || "An unexpected error occurred. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleGoogleSignIn = () => {
-    // Handle Google sign in
-    console.log("Google sign in")
+  const handleGoogleSignIn = async () => {
+    setError("")
+    try {
+      // Simulate Google sign in
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Simulate random error for demo
+      if (Math.random() > 0.7) {
+        throw new Error("Google sign-in failed. Please try again or use email sign-in.")
+      }
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
-  const handleMicrosoftSignIn = () => {
-    // Handle Microsoft sign in
-    console.log("Microsoft sign in")
+  const handleMicrosoftSignIn = async () => {
+    setError("")
+    try {
+      // Simulate Microsoft sign in
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Simulate random error for demo
+      if (Math.random() > 0.7) {
+        throw new Error("Microsoft sign-in is temporarily unavailable. Please try email sign-in.")
+      }
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4">
+      {/* Error Popup */}
+      <ErrorPopup error={error} onClose={() => setError("")} duration={6000} />
+
       {/* Background Pattern */}
       <div className="absolute inset-0 hero-pattern opacity-50"></div>
       <div className="absolute inset-0 hero-grid opacity-30"></div>
@@ -93,6 +136,7 @@ export default function SignInPage() {
                   variant="outline"
                   className="w-full h-12 border-slate-300 hover:bg-slate-50"
                   onClick={handleGoogleSignIn}
+                  disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
@@ -121,6 +165,7 @@ export default function SignInPage() {
                   variant="outline"
                   className="w-full h-12 border-slate-300 hover:bg-slate-50"
                   onClick={handleMicrosoftSignIn}
+                  disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path fill="#F25022" d="M1 1h10v10H1z" />
@@ -157,6 +202,7 @@ export default function SignInPage() {
                     onChange={handleInputChange}
                     className="pl-10 h-12"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -176,11 +222,13 @@ export default function SignInPage() {
                     onChange={handleInputChange}
                     className="pl-10 pr-10 h-12"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -189,7 +237,7 @@ export default function SignInPage() {
 
               <div className="flex items-center justify-between">
                 <label className="flex items-center space-x-2">
-                  <input type="checkbox" className="rounded border-slate-300" />
+                  <input type="checkbox" className="rounded border-slate-300" disabled={isLoading} />
                   <span className="text-sm text-slate-600">Remember me</span>
                 </label>
                 <Link to="/forgot-password" className="text-sm text-blue-600 hover:text-blue-700">
@@ -198,8 +246,12 @@ export default function SignInPage() {
               </div>
 
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button type="submit" className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white">
-                  Sign In
+                <Button
+                  type="submit"
+                  className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
                 </Button>
               </motion.div>
             </form>

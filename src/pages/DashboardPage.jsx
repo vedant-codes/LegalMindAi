@@ -1,23 +1,13 @@
 "use client"
 
-
-import { useState, useEffect } from "react";
-
-import { Printer } from "lucide-react"
-import { motion } from "framer-motion"
+import { useState, useEffect } from "react"
+import { Printer, CalendarDays } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Badge } from "../components/ui/badge"
 import { Input } from "../components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "../components/ui/dropdown-menu"
 import {
   Dialog,
   DialogContent,
@@ -30,7 +20,6 @@ import {
   FileText,
   Upload,
   Search,
-  Filter,
   MoreHorizontal,
   AlertTriangle,
   Clock,
@@ -55,10 +44,14 @@ import {
   X,
   AlertCircle,
   FileX,
+  ChevronDown,
+  SlidersHorizontal,
 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useGlobalAlarm } from "../hooks/use-global-alarm"
+import { EnhancedDropdownMenu } from "../components/enhanced-dropdown-menu"
 
-// Mock data
+// Mock data with current deadlines (relative to today)
 const mockDocuments = [
   {
     id: "1",
@@ -67,6 +60,7 @@ const mockDocuments = [
     status: "analyzed",
     riskScore: 72,
     uploadDate: "2024-01-15",
+    deadline: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 2 days from now
     size: "2.4 MB",
   },
   {
@@ -76,6 +70,7 @@ const mockDocuments = [
     status: "processing",
     riskScore: null,
     uploadDate: "2024-01-14",
+    deadline: new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 1 day from now
     size: "1.2 MB",
   },
   {
@@ -85,6 +80,7 @@ const mockDocuments = [
     status: "analyzed",
     riskScore: 45,
     uploadDate: "2024-01-13",
+    deadline: new Date(Date.now() + 0 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // Due today
     size: "3.1 MB",
   },
   {
@@ -94,7 +90,18 @@ const mockDocuments = [
     status: "analyzed",
     riskScore: 89,
     uploadDate: "2024-01-12",
+    deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 30 days from now
     size: "4.7 MB",
+  },
+  {
+    id: "5",
+    name: "Partnership Agreement - ABC Corp.pdf",
+    type: "Partnership Agreement",
+    status: "analyzed",
+    riskScore: 55,
+    uploadDate: "2024-01-10",
+    deadline: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split("T")[0], // 3 days from now
+    size: "1.8 MB",
   },
 ]
 
@@ -172,7 +179,6 @@ const complexityColors = {
 }
 
 export default function DashboardPage() {
-
   const [documents, setDocuments] = useState([])
   const [stats, setStats] = useState({})
   const [searchTerm, setSearchTerm] = useState("")
@@ -192,57 +198,72 @@ export default function DashboardPage() {
     low: 0,
     medium: 0,
     high: 0,
-  });
+  })
+  const [typeCounts, setTypeCounts] = useState({})
 
-  const [typeCounts, setTypeCounts] = useState({});
+  // Use global alarm system
+  const { checkUrgentDocuments } = useGlobalAlarm()
 
+  // Helper function to calculate days until deadline
+  const getDaysUntilDeadline = (deadline) => {
+    const today = new Date()
+    const deadlineDate = new Date(deadline)
+    const diffTime = deadlineDate - today
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  // Helper function to get deadline urgency level
+  const getDeadlineUrgency = (daysLeft) => {
+    if (daysLeft < 0) return { level: "overdue", color: "text-red-600", bgColor: "bg-red-50 border-red-200" }
+    if (daysLeft === 0) return { level: "today", color: "text-red-600", bgColor: "bg-red-50 border-red-200" }
+    if (daysLeft === 1)
+      return { level: "tomorrow", color: "text-orange-600", bgColor: "bg-orange-50 border-orange-200" }
+    if (daysLeft <= 3) return { level: "soon", color: "text-yellow-600", bgColor: "bg-yellow-50 border-yellow-200" }
+    return { level: "normal", color: "text-green-600", bgColor: "bg-green-50 border-green-200" }
+  }
 
   useEffect(() => {
-    const storedDocs = JSON.parse(localStorage.getItem("documents")) || [];
-    setDocuments(storedDocs);
+    // Use mock data for demo - in real app would load from localStorage
+    const storedDocs = mockDocuments // JSON.parse(localStorage.getItem("documents")) || mockDocuments
+    setDocuments(storedDocs)
 
-
+    // Check for urgent documents using global alarm system
+    checkUrgentDocuments(storedDocs)
 
     // Compute stats here
-    const totalDocuments = storedDocs.length;
-    const highRiskDocuments = storedDocs.filter(doc => doc.riskScore >= 70).length;
+    const totalDocuments = storedDocs.length
+    const highRiskDocuments = storedDocs.filter((doc) => doc.riskScore >= 70).length
 
-    const avgRiskScore =
-      storedDocs.reduce((acc, doc) => acc + doc.riskScore, 0) /
-      (storedDocs.length || 1);
+    const avgRiskScore = storedDocs.reduce((acc, doc) => acc + (doc.riskScore || 0), 0) / (storedDocs.length || 1)
 
-    const documentsThisMonth = storedDocs.filter(doc => {
-      const completedDate = new Date(doc.uploadDate);
-      const now = new Date();
-      return (
-        completedDate.getFullYear() === now.getFullYear() &&
-        completedDate.getMonth() === now.getMonth()
-      );
-    }).length;
+    const documentsThisMonth = storedDocs.filter((doc) => {
+      const completedDate = new Date(doc.uploadDate)
+      const now = new Date()
+      return completedDate.getFullYear() === now.getFullYear() && completedDate.getMonth() === now.getMonth()
+    }).length
+
     const risk = {
-      low: storedDocs.filter((doc) => doc.riskScore <= 40).length,
-      medium: storedDocs.filter((doc) => doc.riskScore > 40 && doc.riskScore <= 70).length,
-      high: storedDocs.filter((doc) => doc.riskScore > 70).length,
-    };
-    setRiskDistribution(risk);
+      low: storedDocs.filter((doc) => (doc.riskScore || 0) <= 40).length,
+      medium: storedDocs.filter((doc) => (doc.riskScore || 0) > 40 && (doc.riskScore || 0) <= 70).length,
+      high: storedDocs.filter((doc) => (doc.riskScore || 0) > 70).length,
+    }
+    setRiskDistribution(risk)
 
     // Compute document type counts
     const types = storedDocs.reduce((acc, doc) => {
-      acc[doc.type] = (acc[doc.type] || 0) + 1;
-      return acc;
-    }, {});
-    setTypeCounts(types);
+      acc[doc.type] = (acc[doc.type] || 0) + 1
+      return acc
+    }, {})
+    setTypeCounts(types)
 
     setStats({
       totalDocuments,
       highRiskDocuments,
       avgRiskScore: Math.round(avgRiskScore),
       documentsThisMonth,
-    });
-
-  }, []);
-
-
+    })
+  }, [checkUrgentDocuments])
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -351,6 +372,9 @@ export default function DashboardPage() {
     setSearchTerm("")
   }
 
+  const hasActiveFilters =
+    filterType !== "all" || statusFilter !== "all" || riskFilter !== "all" || dateFilter !== "all"
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
       {/* Header */}
@@ -373,7 +397,7 @@ export default function DashboardPage() {
         </div>
       </header>
 
-      <div className="container mx-auto px-4 py-8 max-w-7xl">
+      <div className="container mx-auto px-4 py-8 pb-20 max-w-7xl">
         {/* Page Header */}
         <motion.div
           className="mb-8"
@@ -381,12 +405,14 @@ export default function DashboardPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
-          <p className="text-slate-600">Manage and analyze your legal documents with AI-powered insights.</p>
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Dashboard</h1>
+          <p className="text-slate-600 text-sm md:text-base">
+            Manage and analyze your legal documents with AI-powered insights.
+          </p>
         </motion.div>
 
         {/* Stats Cards */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-8">
           {[
             {
               label: "Total Documents",
@@ -420,13 +446,13 @@ export default function DashboardPage() {
               transition={{ delay: index * 0.1, duration: 0.6 }}
             >
               <Card>
-                <CardContent className="p-6">
+                <CardContent className="p-4 md:p-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-medium text-slate-600">{stat.label}</p>
-                      <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+                      <p className="text-xs md:text-sm font-medium text-slate-600">{stat.label}</p>
+                      <p className={`text-xl md:text-2xl font-bold ${stat.color}`}>{stat.value}</p>
                     </div>
-                    <stat.icon className={`w-8 h-8 ${stat.color}`} />
+                    <stat.icon className={`w-6 h-6 md:w-8 md:h-8 ${stat.color}`} />
                   </div>
                 </CardContent>
               </Card>
@@ -436,128 +462,204 @@ export default function DashboardPage() {
 
         <Tabs defaultValue="documents" className="w-full">
           <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="templates">Templates</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="documents" className="text-xs md:text-sm">
+              Documents
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs md:text-sm">
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="text-xs md:text-sm">
+              Analytics
+            </TabsTrigger>
+            <TabsTrigger value="settings" className="text-xs md:text-sm">
+              Settings
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="documents" className="space-y-6">
             {/* Enhanced Search and Filter */}
-            <Card>
-              <CardContent className="p-6">
+            <Card className="border-slate-200 shadow-sm">
+              <CardContent className="p-4 md:p-6">
                 <div className="space-y-4">
-                  <div className="flex flex-col sm:flex-row gap-4 items-center">
-                    <div className="flex-1 relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-4 h-4" />
+                  {/* Search Bar and Filter Button */}
+                  <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
+                    {/* Enhanced Search Bar */}
+                    <div className="flex-1 relative group">
+                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <Search className="h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
+                      </div>
                       <Input
-                        placeholder="Search documents..."
+                        placeholder="Search documents by name or type..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 h-12"
+                        className="pl-10 h-11 md:h-12 border-slate-300 focus:border-blue-500 focus:ring-blue-500 bg-white shadow-sm transition-all duration-200 hover:shadow-md focus:shadow-md"
                       />
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm("")}
+                          className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      )}
                     </div>
+
+                    {/* Enhanced Filter Button */}
                     <div className="flex gap-2 items-center">
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => setShowFilters(!showFilters)}
-                        className="h-12 px-4"
+                        className={`h-11 md:h-12 px-4 md:px-6 border-slate-300 hover:border-blue-400 hover:bg-blue-50 transition-all duration-200 ${
+                          showFilters ? "bg-blue-50 border-blue-400 text-blue-700" : ""
+                        } ${hasActiveFilters ? "bg-blue-100 border-blue-500 text-blue-700" : ""}`}
                       >
-                        <Filter className="w-4 h-4 mr-2" />
-                        Filters
-                        {(filterType !== "all" ||
-                          statusFilter !== "all" ||
-                          riskFilter !== "all" ||
-                          dateFilter !== "all") && (
-                            <Badge variant="secondary" className="ml-2 h-5 w-5 p-0 flex items-center justify-center">
-                              !
-                            </Badge>
-                          )}
+                        <SlidersHorizontal className="w-4 h-4 mr-2" />
+                        <span className="hidden sm:inline">Filters</span>
+                        <span className="sm:hidden">Filter</span>
+                        {hasActiveFilters && (
+                          <Badge
+                            variant="secondary"
+                            className="ml-2 h-5 w-5 p-0 flex items-center justify-center bg-blue-600 text-white text-xs"
+                          >
+                            !
+                          </Badge>
+                        )}
+                        <ChevronDown
+                          className={`w-4 h-4 ml-2 transition-transform duration-200 ${showFilters ? "rotate-180" : ""}`}
+                        />
                       </Button>
-                      {(filterType !== "all" ||
-                        statusFilter !== "all" ||
-                        riskFilter !== "all" ||
-                        dateFilter !== "all") && (
+
+                      {hasActiveFilters && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                        >
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={clearFilters}
-                            className="h-12 px-4 text-red-600 hover:text-red-700 hover:bg-red-50"
+                            className="h-11 md:h-12 px-3 md:px-4 text-red-600 hover:text-red-700 hover:bg-red-50 border border-red-200 hover:border-red-300"
                           >
-                            <X className="w-4 h-4 mr-2" />
-                            Clear
+                            <X className="w-4 h-4 mr-1 md:mr-2" />
+                            <span className="hidden sm:inline">Clear</span>
                           </Button>
-                        )}
+                        </motion.div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Advanced Filters */}
-                  {showFilters && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 bg-slate-50 rounded-lg border"
-                    >
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Document Type</label>
-                        <select
-                          value={filterType}
-                          onChange={(e) => setFilterType(e.target.value)}
-                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
-                        >
-                          <option value="all">All Types</option>
-                          <option value="nda">NDA</option>
-                          <option value="service">Service Agreement</option>
-                          <option value="employment">Employment</option>
-                          <option value="licensing">Licensing</option>
-                        </select>
-                      </div>
+                  {/* Enhanced Advanced Filters */}
+                  <AnimatePresence>
+                    {showFilters && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0, y: -10 }}
+                        animate={{ opacity: 1, height: "auto", y: 0 }}
+                        exit={{ opacity: 0, height: 0, y: -10 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className="overflow-hidden"
+                      >
+                        <div className="bg-gradient-to-r from-slate-50 to-blue-50 rounded-xl border border-slate-200 p-4 md:p-6 shadow-inner">
+                          <div className="flex items-center mb-4">
+                            <SlidersHorizontal className="w-5 h-5 text-slate-600 mr-2" />
+                            <h3 className="text-sm font-semibold text-slate-700">Advanced Filters</h3>
+                          </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Status</label>
-                        <select
-                          value={statusFilter}
-                          onChange={(e) => setStatusFilter(e.target.value)}
-                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
-                        >
-                          <option value="all">All Status</option>
-                          <option value="analyzed">Analyzed</option>
-                          <option value="processing">Processing</option>
-                          <option value="error">Error</option>
-                        </select>
-                      </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-slate-700">Document Type</label>
+                              <select
+                                value={filterType}
+                                onChange={(e) => setFilterType(e.target.value)}
+                                className="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                              >
+                                <option value="all">All Types</option>
+                                <option value="nda">NDA</option>
+                                <option value="service">Service Agreement</option>
+                                <option value="employment">Employment</option>
+                                <option value="licensing">Licensing</option>
+                              </select>
+                            </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Risk Level</label>
-                        <select
-                          value={riskFilter}
-                          onChange={(e) => setRiskFilter(e.target.value)}
-                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
-                        >
-                          <option value="all">All Risk Levels</option>
-                          <option value="low">Low Risk (0-39)</option>
-                          <option value="medium">Medium Risk (40-69)</option>
-                          <option value="high">High Risk (70+)</option>
-                        </select>
-                      </div>
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-slate-700">Status</label>
+                              <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value)}
+                                className="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                              >
+                                <option value="all">All Status</option>
+                                <option value="analyzed">Analyzed</option>
+                                <option value="processing">Processing</option>
+                                <option value="error">Error</option>
+                              </select>
+                            </div>
 
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 mb-2">Upload Date</label>
-                        <select
-                          value={dateFilter}
-                          onChange={(e) => setDateFilter(e.target.value)}
-                          className="w-full h-10 px-3 border border-slate-300 rounded-md text-sm bg-white"
-                        >
-                          <option value="all">All Dates</option>
-                          <option value="today">Today</option>
-                          <option value="week">This Week</option>
-                          <option value="month">This Month</option>
-                        </select>
-                      </div>
-                    </motion.div>
-                  )}
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-slate-700">Risk Level</label>
+                              <select
+                                value={riskFilter}
+                                onChange={(e) => setRiskFilter(e.target.value)}
+                                className="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                              >
+                                <option value="all">All Risk Levels</option>
+                                <option value="low">Low Risk (0-39)</option>
+                                <option value="medium">Medium Risk (40-69)</option>
+                                <option value="high">High Risk (70+)</option>
+                              </select>
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="block text-sm font-medium text-slate-700">Upload Date</label>
+                              <select
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                                className="w-full h-10 px-3 border border-slate-300 rounded-lg text-sm bg-white shadow-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all"
+                              >
+                                <option value="all">All Dates</option>
+                                <option value="today">Today</option>
+                                <option value="week">This Week</option>
+                                <option value="month">This Month</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {hasActiveFilters && (
+                            <motion.div
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="mt-4 pt-4 border-t border-slate-200"
+                            >
+                              <div className="flex flex-wrap gap-2">
+                                <span className="text-sm text-slate-600">Active filters:</span>
+                                {filterType !== "all" && (
+                                  <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                    Type: {filterType}
+                                  </Badge>
+                                )}
+                                {statusFilter !== "all" && (
+                                  <Badge variant="secondary" className="bg-green-100 text-green-800">
+                                    Status: {statusFilter}
+                                  </Badge>
+                                )}
+                                {riskFilter !== "all" && (
+                                  <Badge variant="secondary" className="bg-yellow-100 text-yellow-800">
+                                    Risk: {riskFilter}
+                                  </Badge>
+                                )}
+                                {dateFilter !== "all" && (
+                                  <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+                                    Date: {dateFilter}
+                                  </Badge>
+                                )}
+                              </div>
+                            </motion.div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardContent>
             </Card>
@@ -565,15 +667,15 @@ export default function DashboardPage() {
             {/* Documents List */}
             <Card>
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
-                    <CardTitle>Recent Documents</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-lg md:text-xl">Recent Documents</CardTitle>
+                    <CardDescription className="text-sm">
                       Your uploaded and analyzed legal documents ({filteredDocuments.length} of {documents.length})
                     </CardDescription>
                   </div>
                   {filteredDocuments.length !== documents.length && (
-                    <Badge variant="secondary">
+                    <Badge variant="secondary" className="self-start sm:self-center">
                       Filtered: {filteredDocuments.length}/{documents.length}
                     </Badge>
                   )}
@@ -581,112 +683,176 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {filteredDocuments.map((file) => (
-                    <div
-                      key={file.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="flex items-center space-x-4 flex-1">
-                        <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <FileText className="w-5 h-5 text-blue-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-slate-800 truncate">{file.name}</h3>
-                          <div className="flex items-center space-x-4 mt-1">
-                            <Badge variant="secondary" className="text-xs">
-                              {file.type}
-                            </Badge>
-                            <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
-                            <span className="text-xs text-slate-500">
-                              {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
+                  {filteredDocuments.map((file) => {
+                    const daysLeft = file.deadline ? getDaysUntilDeadline(file.deadline) : null
+                    const urgency = daysLeft !== null ? getDeadlineUrgency(daysLeft) : null
 
-                      <div className="flex items-center space-x-4">
-                        {file.riskScore && (
-                          <div className="text-right">
-                            <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
-                              Risk: {file.riskScore}/100
+                    return (
+                      <div
+                        key={file.id}
+                        className={`flex flex-col lg:flex-row lg:items-center justify-between p-4 border rounded-lg hover:bg-slate-50 transition-colors ${
+                          urgency && daysLeft <= 3 && daysLeft >= 0 ? "border-l-4 border-l-red-400 bg-red-50/30" : ""
+                        }`}
+                      >
+                        <div className="flex items-start lg:items-center space-x-4 flex-1 min-w-0">
+                          <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                            <FileText className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-medium text-slate-800 truncate text-sm md:text-base">{file.name}</h3>
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              <Badge variant="secondary" className="text-xs">
+                                {file.type}
+                              </Badge>
+                              <Badge className={`text-xs ${getStatusColor(file.status)}`}>{file.status}</Badge>
+                              {urgency && daysLeft <= 3 && daysLeft >= 0 && (
+                                <Badge className={`text-xs ${urgency.color} bg-transparent border`}>
+                                  <CalendarDays className="w-3 h-3 mr-1" />
+                                  {daysLeft === 0
+                                    ? "Due Today"
+                                    : daysLeft === 1
+                                      ? "Due Tomorrow"
+                                      : `${daysLeft} days left`}
+                                </Badge>
+                              )}
+                              <span className="text-xs text-slate-500">
+                                {file.size} • {new Date(file.uploadDate).toLocaleDateString()}
+                              </span>
                             </div>
                           </div>
-                        )}
-                        <div className="flex items-center space-x-2">
-                          {file.status === "completed" ? (
-                            <>
-                              <Link to={`/analysis/${file.id}`} state={{ file }}>
-                                <Button size="sm" className="h-8">
-                                  View Analysis
-                                </Button>
-                              </Link>
-                              <Link to={`/compare?original=${file.id}`}>
+                        </div>
+
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 lg:gap-4 mt-3 lg:mt-0">
+                          {file.riskScore && (
+                            <div className="text-left lg:text-right">
+                              <div className={`text-sm font-medium ${getRiskColor(file.riskScore)}`}>
+                                Risk: {file.riskScore}/100
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {file.status === "completed" ? (
+                              <>
+                                <Link to={`/analysis/${file.id}`} state={{ file }}>
+                                  <Button size="sm" className="h-8 text-xs">
+                                    View Analysis
+                                  </Button>
+                                </Link>
+                                <Link to={`/compare?original=${file.id}`}>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="h-8 text-xs text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  >
+                                    <GitCompare className="w-3 h-3 mr-1" />
+                                    Compare
+                                  </Button>
+                                </Link>
+                              </>
+                            ) : (
+                              <Button size="sm" variant="outline" disabled className="h-8 text-xs">
+                                <Clock className="w-3 h-3 mr-1" />
+                                Processing
+                              </Button>
+                            )}
+
+                            {/* Enhanced 3-dots menu with dynamic positioning */}
+                            <EnhancedDropdownMenu
+                              trigger={
                                 <Button
                                   size="sm"
-                                  variant="outline"
-                                  className="h-8 text-purple-600 border-purple-200 hover:bg-purple-50"
+                                  variant="ghost"
+                                  className="h-8 w-8 p-0 hover:bg-slate-100 rounded-full transition-colors duration-200"
                                 >
-                                  <GitCompare className="w-4 h-4 mr-2" />
-                                  Compare
+                                  <MoreHorizontal className="w-4 h-4" />
                                 </Button>
-                              </Link>
-                            </>
-                          ) : (
-                            <Button size="sm" variant="outline" disabled className="h-8">
-                              <Clock className="w-4 h-4 mr-2" />
-                              Processing
-                            </Button>
-                          )}
+                              }
+                              align="end"
+                              side="bottom"
+                              className="w-48 p-1.5"
+                            >
+                              <div className="px-2 py-1 mb-1">
+                                <div className="text-xs font-medium text-slate-500 uppercase tracking-wide">
+                                  Actions
+                                </div>
+                              </div>
 
-                          {/* Enhanced 3-dots menu */}
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button size="sm" variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="w-48">
-                              <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleModifyDocument(doc.id)}>
-                                <Edit className="w-4 h-4 mr-2" />
-                                Modify
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicateDocument(doc.id)}>
-                                <Copy className="w-4 h-4 mr-2" />
-                                Duplicate
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShareDocument(doc.id)}>
-                                <Share2 className="w-4 h-4 mr-2" />
-                                Share
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleArchiveDocument(doc.id)}>
-                                <Archive className="w-4 h-4 mr-2" />
-                                Archive
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
+                              <button
+                                onClick={() => handleModifyDocument(file.id)}
+                                className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors duration-150 group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-blue-100 group-hover:bg-blue-200 flex items-center justify-center mr-2 transition-colors duration-150">
+                                  <Edit className="w-3 h-3 text-blue-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-xs">Modify</div>
+                                </div>
+                              </button>
+
+                              <button
+                                onClick={() => handleDuplicateDocument(file.id)}
+                                className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-green-50 hover:text-green-700 cursor-pointer transition-colors duration-150 group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-green-100 group-hover:bg-green-200 flex items-center justify-center mr-2 transition-colors duration-150">
+                                  <Copy className="w-3 h-3 text-green-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-xs">Duplicate</div>
+                                </div>
+                              </button>
+
+                              <button
+                                onClick={() => handleShareDocument(file.id)}
+                                className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-purple-50 hover:text-purple-700 cursor-pointer transition-colors duration-150 group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-purple-100 group-hover:bg-purple-200 flex items-center justify-center mr-2 transition-colors duration-150">
+                                  <Share2 className="w-3 h-3 text-purple-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-xs">Share</div>
+                                </div>
+                              </button>
+
+                              <button
+                                onClick={() => handleArchiveDocument(file.id)}
+                                className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-orange-50 hover:text-orange-700 cursor-pointer transition-colors duration-150 group"
+                              >
+                                <div className="w-6 h-6 rounded-md bg-orange-100 group-hover:bg-orange-200 flex items-center justify-center mr-2 transition-colors duration-150">
+                                  <Archive className="w-3 h-3 text-orange-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-xs">Archive</div>
+                                </div>
+                              </button>
+
+                              <div className="h-px bg-slate-200 my-1" />
+
+                              <button
                                 onClick={() => {
-                                  setDocumentToDelete(doc)
+                                  setDocumentToDelete(file)
                                   setShowDeleteDialog(true)
                                 }}
-                                className="text-red-600 focus:text-red-600"
+                                className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-red-50 hover:text-red-700 cursor-pointer transition-colors duration-150 group"
                               >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                                <div className="w-6 h-6 rounded-md bg-red-100 group-hover:bg-red-200 flex items-center justify-center mr-2 transition-colors duration-150">
+                                  <Trash2 className="w-3 h-3 text-red-600" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-xs">Delete</div>
+                                </div>
+                              </button>
+                            </EnhancedDropdownMenu>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
 
                   {filteredDocuments.length === 0 && (
                     <div className="text-center py-12">
                       <FileX className="w-16 h-16 mx-auto mb-4 text-slate-400" />
                       <h3 className="text-lg font-medium text-slate-800 mb-2">No documents found</h3>
-                      <p className="text-slate-600 mb-4">
+                      <p className="text-slate-600 mb-4 text-sm">
                         {documents.length === 0
                           ? "Upload your first document to get started"
                           : "Try adjusting your search or filter criteria"}
@@ -707,15 +873,15 @@ export default function DashboardPage() {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }}>
               <Card>
                 <CardHeader>
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <CardTitle>Legal Document Templates</CardTitle>
-                      <CardDescription>
+                      <CardTitle className="text-lg md:text-xl">Legal Document Templates</CardTitle>
+                      <CardDescription className="text-sm">
                         Professional, legally-compliant templates for Indian jurisdiction
                       </CardDescription>
                     </div>
                     <Link to="/templates">
-                      <Button variant="outline" className="h-10">
+                      <Button variant="outline" className="h-10 text-sm">
                         View All Templates
                         <ArrowRight className="w-4 h-4 ml-2" />
                       </Button>
@@ -723,7 +889,7 @@ export default function DashboardPage() {
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
                     {dashboardTemplates.map((template, index) => (
                       <motion.div
                         key={template.id}
@@ -736,16 +902,16 @@ export default function DashboardPage() {
                           <CardHeader className="pb-2">
                             <div className="flex items-start justify-between mb-2">
                               <div
-                                className={`w-12 h-12 ${template.color} rounded-xl flex items-center justify-center border-2 group-hover:scale-110 transition-transform duration-200`}
+                                className={`w-10 h-10 md:w-12 md:h-12 ${template.color} rounded-xl flex items-center justify-center border-2 group-hover:scale-110 transition-transform duration-200`}
                               >
-                                <template.icon className="w-6 h-6" />
+                                <template.icon className="w-5 h-5 md:w-6 md:h-6" />
                               </div>
                               <Badge className={complexityColors[template.complexity]}>{template.complexity}</Badge>
                             </div>
-                            <CardTitle className="text-slate-800 text-lg mb-1 group-hover:text-blue-600 transition-colors">
+                            <CardTitle className="text-slate-800 text-base md:text-lg mb-1 group-hover:text-blue-600 transition-colors">
                               {template.name}
                             </CardTitle>
-                            <CardDescription className="text-slate-600 line-clamp-2 text-sm">
+                            <CardDescription className="text-slate-600 line-clamp-2 text-xs md:text-sm">
                               {template.description}
                             </CardDescription>
                           </CardHeader>
@@ -764,7 +930,7 @@ export default function DashboardPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
-                                className="flex-1 h-8 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                                className="flex-1 h-8 text-xs hover:bg-blue-50 hover:border-blue-300 transition-colors"
                                 onClick={() => handlePreviewTemplate(template)}
                               >
                                 <Eye className="w-3 h-3 mr-1" />
@@ -772,7 +938,7 @@ export default function DashboardPage() {
                               </Button>
                               <Button
                                 size="sm"
-                                className="flex-1 h-8 bg-blue-600 hover:bg-blue-700"
+                                className="flex-1 h-8 text-xs bg-blue-600 hover:bg-blue-700"
                                 onClick={() => handleUseTemplate(template)}
                               >
                                 <Edit3 className="w-3 h-3 mr-1" />
@@ -790,56 +956,59 @@ export default function DashboardPage() {
           </TabsContent>
 
           <TabsContent value="analytics">
-  <Card>
-    <CardHeader>
-      <CardTitle>Analytics Overview</CardTitle>
-      <CardDescription>Risk distribution and document type breakdown</CardDescription>
-    </CardHeader>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg md:text-xl">Analytics Overview</CardTitle>
+                <CardDescription className="text-sm">Risk distribution and document type breakdown</CardDescription>
+              </CardHeader>
 
-    <CardContent>
-      <div className="grid md:grid-cols-2 gap-6">
-        {/* Risk Distribution */}
-        <div className="space-y-4">
-          <h4 className="text-slate-700 font-medium">Risk Distribution</h4>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">Low Risk (0-40)</span>
-            <span className="text-sm font-medium">{riskDistribution.low} documents</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
-            <span className="text-sm font-medium">{riskDistribution.medium} documents</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-slate-600">High Risk (71-100)</span>
-            <span className="text-sm font-medium">{riskDistribution.high} documents</span>
-          </div>
-        </div>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Risk Distribution */}
+                  <div className="space-y-4">
+                    <h4 className="text-slate-700 font-medium">Risk Distribution</h4>
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Low Risk (0-40)</span>
+                        <span className="text-sm font-medium">{riskDistribution.low} documents</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">Medium Risk (41-70)</span>
+                        <span className="text-sm font-medium">{riskDistribution.medium} documents</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-slate-600">High Risk (71-100)</span>
+                        <span className="text-sm font-medium">{riskDistribution.high} documents</span>
+                      </div>
+                    </div>
+                  </div>
 
-        {/* Document Types */}
-        <div className="space-y-4">
-          <h4 className="text-slate-700 font-medium">Document Types</h4>
-          {Object.entries(typeCounts).map(([type, count]) => (
-            <div key={type} className="flex items-center justify-between">
-              <span className="text-sm text-slate-600">{type}</span>
-              <span className="text-sm font-medium">{count}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-</TabsContent>
-
+                  {/* Document Types */}
+                  <div className="space-y-4">
+                    <h4 className="text-slate-700 font-medium">Document Types</h4>
+                    <div className="space-y-3">
+                      {Object.entries(typeCounts).map(([type, count]) => (
+                        <div key={type} className="flex items-center justify-between">
+                          <span className="text-sm text-slate-600">{type}</span>
+                          <span className="text-sm font-medium">{count}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
           <TabsContent value="settings">
             <Card>
               <CardHeader>
-                <CardTitle>Settings</CardTitle>
-                <CardDescription>Manage your account and preferences.</CardDescription>
+                <CardTitle className="text-lg md:text-xl">Settings</CardTitle>
+                <CardDescription className="text-sm">Manage your account and preferences.</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center justify-center h-64">
-                  <p className="text-slate-600">Settings features coming soon...</p>
+                  <p className="text-slate-600 text-sm">Settings features coming soon...</p>
                 </div>
               </CardContent>
             </Card>
@@ -951,26 +1120,26 @@ function TemplatePreview({ template, onClose, onUse }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
-        <div className="p-6 border-b border-slate-200">
-          <div className="flex items-center justify-between">
+        <div className="p-4 md:p-6 border-b border-slate-200">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-bold text-slate-800">{template.name} - Preview</h2>
-              <p className="text-slate-600">Sample template with placeholder content</p>
+              <h2 className="text-xl md:text-2xl font-bold text-slate-800">{template.name} - Preview</h2>
+              <p className="text-slate-600 text-sm">Sample template with placeholder content</p>
             </div>
             <div className="flex space-x-2">
-              <Button onClick={onUse} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={onUse} className="bg-blue-600 hover:bg-blue-700 text-sm">
                 <Edit3 className="w-4 h-4 mr-2" />
                 Use This Template
               </Button>
-              <Button variant="outline" onClick={onClose}>
+              <Button variant="outline" onClick={onClose} className="text-sm">
                 ✕
               </Button>
             </div>
           </div>
         </div>
 
-        <div className="p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
-          <div className="bg-white border border-slate-200 rounded-lg p-8 shadow-sm">
+        <div className="p-4 md:p-6 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <div className="bg-white border border-slate-200 rounded-lg p-4 md:p-8 shadow-sm">
             <div dangerouslySetInnerHTML={{ __html: getTemplatePreview(template) }} />
           </div>
         </div>
@@ -1027,21 +1196,21 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-xl shadow-2xl w-full max-w-7xl h-[90vh] flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 flex-shrink-0">
+        <div className="flex items-center justify-between p-4 md:p-6 border-b border-slate-200 flex-shrink-0">
           <div>
-            <h2 className="text-2xl font-bold text-slate-800">{template.name}</h2>
-            <p className="text-slate-600">Fill in the required information</p>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-800">{template.name}</h2>
+            <p className="text-slate-600 text-sm">Fill in the required information</p>
           </div>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} className="text-sm">
             ✕
           </Button>
         </div>
 
         {/* Content */}
-        <div className="flex flex-1 min-h-0">
+        <div className="flex flex-col lg:flex-row flex-1 min-h-0">
           {/* Form Section */}
-          <div className="w-1/2 border-r border-slate-200 flex flex-col">
-            <div className="flex-1 overflow-y-auto p-6">
+          <div className="w-full lg:w-1/2 border-b lg:border-b-0 lg:border-r border-slate-200 flex flex-col">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
               <div className="space-y-4">
                 {getTemplateFields(template).map((field, index) => (
                   <div key={field.name}>
@@ -1051,7 +1220,7 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
                     </label>
                     {field.type === "textarea" ? (
                       <textarea
-                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical"
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-vertical text-sm"
                         rows={3}
                         placeholder={field.placeholder}
                         value={formData[field.name] || ""}
@@ -1059,7 +1228,7 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
                       />
                     ) : field.type === "select" ? (
                       <select
-                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                         value={formData[field.name] || ""}
                         onChange={(e) => handleInputChange(field.name, e.target.value)}
                       >
@@ -1076,7 +1245,7 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
                         placeholder={field.placeholder}
                         value={formData[field.name] || ""}
                         onChange={(e) => handleInputChange(field.name, e.target.value)}
-                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        className="w-full p-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
                       />
                     )}
                   </div>
@@ -1085,21 +1254,21 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
             </div>
 
             {/* Form Actions - Fixed at bottom */}
-            <div className="p-6 border-t border-slate-200 bg-white flex-shrink-0">
+            <div className="p-4 md:p-6 border-t border-slate-200 bg-white flex-shrink-0">
               <div className="space-y-3">
                 <Button
                   onClick={generateDocument}
                   disabled={isGenerating}
-                  className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg"
+                  className="w-full bg-blue-600 hover:bg-blue-700 h-10 md:h-12 text-sm md:text-base"
                 >
                   {isGenerating ? (
                     <>
-                      <Clock className="w-5 h-5 mr-2 animate-spin" />
+                      <Clock className="w-4 h-4 md:w-5 md:h-5 mr-2 animate-spin" />
                       Generating Document...
                     </>
                   ) : (
                     <>
-                      <FileText className="w-5 h-5 mr-2" />
+                      <FileText className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                       Generate Document
                     </>
                   )}
@@ -1107,11 +1276,11 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
 
                 {generatedDocument && (
                   <div className="flex space-x-2">
-                    <Button onClick={exportDocument} variant="outline" className="flex-1">
+                    <Button onClick={exportDocument} variant="outline" className="flex-1 text-sm">
                       <Download className="w-4 h-4 mr-2" />
                       Export
                     </Button>
-                    <Button onClick={printDocument} variant="outline" className="flex-1">
+                    <Button onClick={printDocument} variant="outline" className="flex-1 text-sm">
                       <Printer className="w-4 h-4 mr-2" />
                       Print
                     </Button>
@@ -1122,22 +1291,22 @@ function TemplateEditor({ template, onClose, onDocumentGenerated }) {
           </div>
 
           {/* Preview Section */}
-          <div className="w-1/2 bg-slate-50 flex flex-col">
-            <div className="p-6 border-b border-slate-200 bg-white flex-shrink-0">
-              <h3 className="text-lg font-semibold text-slate-800">Document Preview</h3>
+          <div className="w-full lg:w-1/2 bg-slate-50 flex flex-col">
+            <div className="p-4 md:p-6 border-b border-slate-200 bg-white flex-shrink-0">
+              <h3 className="text-base md:text-lg font-semibold text-slate-800">Document Preview</h3>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-4 md:p-6">
               {generatedDocument ? (
                 <div
-                  className="bg-white p-8 rounded-lg shadow-sm border border-slate-200 text-sm leading-relaxed"
+                  className="bg-white p-4 md:p-8 rounded-lg shadow-sm border border-slate-200 text-sm leading-relaxed"
                   dangerouslySetInnerHTML={{ __html: generatedDocument }}
                 />
               ) : (
                 <div className="bg-white p-6 rounded-lg shadow-sm border border-slate-200 h-full flex items-center justify-center">
                   <div className="text-center text-slate-500">
-                    <FileText className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                    <p>Fill in the form and click "Generate Document" to see the preview</p>
+                    <FileText className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-sm">Fill in the form and click "Generate Document" to see the preview</p>
                   </div>
                 </div>
               )}
@@ -1430,11 +1599,11 @@ function generateTemplateDocument(template, formData) {
       
       <div style="margin: 30px 0;">
         ${Object.entries(formData)
-      .map(
-        ([key, value]) =>
-          `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
-      )
-      .join("")}
+          .map(
+            ([key, value]) =>
+              `<p style="margin: 10px 0;"><strong>${key.replace(/_/g, " ").toUpperCase()}:</strong> ${value}</p>`,
+          )
+          .join("")}
       </div>
       
       <div style="margin-top: 60px; text-align: center;">

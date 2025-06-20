@@ -8,7 +8,8 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Separator } from "../components/ui/separator"
 import { Brain, Mail, Lock, Eye, EyeOff, ArrowLeft, User, Building } from "lucide-react"
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
+import { ErrorPopup } from "../components/error-popup"
 
 export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -22,6 +23,9 @@ export default function SignUpPage() {
     confirmPassword: "",
     agreeToTerms: false,
   })
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
+  const navigate = useNavigate()
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -29,26 +33,96 @@ export default function SignUpPage() {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     })
+    // Clear error when user starts typing
+    if (error) setError("")
   }
 
-  const handleSubmit = (e) => {
+  const validateForm = () => {
+    if (!formData.firstName.trim()) {
+      throw new Error("First name is required.")
+    }
+    if (!formData.lastName.trim()) {
+      throw new Error("Last name is required.")
+    }
+    if (!formData.email.trim()) {
+      throw new Error("Email is required.")
+    }
+    if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      throw new Error("Please enter a valid email address.")
+    }
+    if (formData.password.length < 8) {
+      throw new Error("Password must be at least 8 characters long.")
+    }
+    if (formData.password !== formData.confirmPassword) {
+      throw new Error("Passwords do not match.")
+    }
+    if (!formData.agreeToTerms) {
+      throw new Error("You must agree to the Terms of Service and Privacy Policy.")
+    }
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    // Handle sign up logic here
-    console.log("Sign up:", formData)
+    setIsLoading(true)
+    setError("")
+
+    try {
+      validateForm()
+
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 1500))
+
+      // Simulate random errors for demo
+      if (formData.email === "existing@example.com") {
+        throw new Error("An account with this email already exists. Please sign in instead.")
+      }
+
+      if (Math.random() > 0.8) {
+        throw new Error("Registration failed due to server error. Please try again.")
+      }
+
+      // Success - redirect to dashboard
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err.message)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
-  const handleGoogleSignUp = () => {
-    // Handle Google sign up
-    console.log("Google sign up")
+  const handleGoogleSignUp = async () => {
+    setError("")
+    try {
+      // Simulate Google sign up
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      if (Math.random() > 0.7) {
+        throw new Error("Google sign-up failed. Please try again or use email registration.")
+      }
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
-  const handleMicrosoftSignUp = () => {
-    // Handle Microsoft sign up
-    console.log("Microsoft sign up")
+  const handleMicrosoftSignUp = async () => {
+    setError("")
+    try {
+      // Simulate Microsoft sign up
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      if (Math.random() > 0.7) {
+        throw new Error("Microsoft sign-up is temporarily unavailable. Please try email registration.")
+      }
+      navigate("/dashboard")
+    } catch (err) {
+      setError(err.message)
+    }
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 flex items-center justify-center p-4">
+      {/* Error Popup */}
+      <ErrorPopup error={error} onClose={() => setError("")} duration={6000} />
+
       {/* Background Pattern */}
       <div className="absolute inset-0 hero-pattern opacity-50"></div>
       <div className="absolute inset-0 hero-grid opacity-30"></div>
@@ -98,6 +172,7 @@ export default function SignUpPage() {
                   variant="outline"
                   className="w-full h-12 border-slate-300 hover:bg-slate-50"
                   onClick={handleGoogleSignUp}
+                  disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path
@@ -126,6 +201,7 @@ export default function SignUpPage() {
                   variant="outline"
                   className="w-full h-12 border-slate-300 hover:bg-slate-50"
                   onClick={handleMicrosoftSignUp}
+                  disabled={isLoading}
                 >
                   <svg className="w-5 h-5 mr-3" viewBox="0 0 24 24">
                     <path fill="#F25022" d="M1 1h10v10H1z" />
@@ -163,6 +239,7 @@ export default function SignUpPage() {
                       onChange={handleInputChange}
                       className="pl-10 h-12"
                       required
+                      disabled={isLoading}
                     />
                   </div>
                 </div>
@@ -180,6 +257,7 @@ export default function SignUpPage() {
                     onChange={handleInputChange}
                     className="h-12"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -199,6 +277,7 @@ export default function SignUpPage() {
                     onChange={handleInputChange}
                     className="pl-10 h-12"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -217,6 +296,7 @@ export default function SignUpPage() {
                     value={formData.company}
                     onChange={handleInputChange}
                     className="pl-10 h-12"
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -236,11 +316,13 @@ export default function SignUpPage() {
                     onChange={handleInputChange}
                     className="pl-10 pr-10 h-12"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -262,11 +344,13 @@ export default function SignUpPage() {
                     onChange={handleInputChange}
                     className="pl-10 pr-10 h-12"
                     required
+                    disabled={isLoading}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                    disabled={isLoading}
                   >
                     {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -282,6 +366,7 @@ export default function SignUpPage() {
                   onChange={handleInputChange}
                   className="rounded border-slate-300 mt-1"
                   required
+                  disabled={isLoading}
                 />
                 <label htmlFor="agreeToTerms" className="text-sm text-slate-600 leading-relaxed">
                   I agree to the{" "}
@@ -299,9 +384,9 @@ export default function SignUpPage() {
                 <Button
                   type="submit"
                   className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white"
-                  disabled={!formData.agreeToTerms}
+                  disabled={!formData.agreeToTerms || isLoading}
                 >
-                  Create Account
+                  {isLoading ? "Creating Account..." : "Create Account"}
                 </Button>
               </motion.div>
             </form>

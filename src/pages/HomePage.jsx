@@ -332,8 +332,8 @@ export default function HomePage() {
           >
             {[
               {
-                name: "Sarah Johnson",
-                role: "Freelance Consultant",
+                name: "Sahil Malawde",
+                role: "Freelance Developer",
                 company: "Independent",
                 content:
                   "LegalMind.AI has transformed how I review contracts. What used to take hours now takes minutes, and I catch risks I might have missed.",

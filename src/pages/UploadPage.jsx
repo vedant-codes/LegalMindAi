@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback,useEffect } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Progress } from "../components/ui/progress"
@@ -9,120 +9,144 @@ import { Upload, FileText, X, CheckCircle, AlertCircle, Brain, ArrowLeft } from 
 import { useDropzone } from "react-dropzone"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import axios from 'axios'
+import axios from "axios"
+import { ErrorPopup } from "../components/error-popup"
+import { useGlobalAlarm } from "../hooks/use-global-alarm"
+
 
 export default function UploadPage() {
- 
-
-const uploadAndAnalyzeFile = async (file, fileId) => {
-  const formData = new FormData()
-  formData.append("document", file)
-
-  try {
-    const response = await axios.post("https://legalmindai-backend-production.up.railway.app/api/upload", formData, {
-      headers: { "Content-Type": "multipart/form-data" },
-    })
-
-    const serverFileId = response.data.fileId // use a local variable
-
-    pollFileStatus(serverFileId, fileId)
-
-    
-  } catch (error) {
-    console.error("Upload failed", error)
-    setFiles((prev) =>
-      prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f))
-    )
-  }
-}
-
-  const pollFileStatus = (fileServerId, fileId) => {
-  
-  const interval = setInterval(async () => {
-    try {
-      const statusResponse = await axios.get(`https://legalmindai-backend-production.up.railway.app/api/status/${fileServerId}`);
-      const status = statusResponse.data.status;
-      const progress = statusResponse.data.progress;
-      console.log(progress)
-
-      if (status === "completed") {
-        clearInterval(interval);
-
-        const docResponse = await axios.get(`https://legalmindai-backend-production.up.railway.app/api/document/${fileServerId}`);
-        const extractedText = docResponse.data.extractedText;
-
-        const summaryResponse = await axios.post("https://legalmindai-backend-production.up.railway.app/api/generate-summary", {
-          prompt: extractedText,
-        });
-        
-
-        const type = summaryResponse.data.result.type || "Summary"; // or adjust based on your API
-
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? {
-                  ...f,
-                  status: "completed",
-                  progress: 100,
-                  type: type,
-                  analysis: summaryResponse.data.result,
-                  riskScore:summaryResponse.data.result.riskScore,
-                  uploadDate: Date.now()
-                }
-              : f
-          )
-        );
-        
-        
-      } else if (status === "processing") {
-        // Animate progress while processing
-        
-        setFiles((prev) =>
-          prev.map((f) =>
-            f.id === fileId
-              ? {
-                  ...f,
-                  progress: Number(progress),
-                  status: "processing",
-                }
-              : f
-          )
-        );
-      }
-    } catch (err) {
-      console.error("Polling failed", err);
-      clearInterval(interval);
-      setFiles((prev) =>
-        prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f))
-      );
-    }
-  }, 1000);
-};
-
-
-
   const [files, setFiles] = useState([])
   const [isProcessing, setIsProcessing] = useState(false)
+  const [error, setError] = useState("")
+  const { checkUrgentDocuments } = useGlobalAlarm()
 
-  const onDrop = useCallback((acceptedFiles) => {
-    console.log("files dropped")
-  const newFiles = acceptedFiles.map((file) => ({
-    id: Math.random().toString(36).substr(2, 9),
-    name: file.name,
-    size: formatFileSize(file.size),
-    status: "uploading",
-    progress: 0,
-    file, // keep actual file here
-  }))
+  const uploadAndAnalyzeFile = async (file, fileId) => {
+    const formData = new FormData()
+    formData.append("document", file)
 
-  setFiles((prev) => [...prev, ...newFiles])
+    try {
+      const response = await axios.post("https://legalmindai-backend-production.up.railway.app/api/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
 
-  newFiles.forEach((file) => {
-    uploadAndAnalyzeFile(file.file, file.id)
-  })
-}, [])
+      const serverFileId = response.data.fileId
+      pollFileStatus(serverFileId, fileId)
+    } catch (error) {
+      console.error("Upload failed", error)
+      setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f)))
 
+      // Set error message based on error type
+      if (error.response?.status === 413) {
+        setError("File is too large. Please upload files smaller than 10MB.")
+      } else if (error.response?.status === 415) {
+        setError("Unsupported file type. Please upload PDF, DOC, or DOCX files only.")
+      } else if (error.code === "NETWORK_ERROR") {
+        setError("Network error. Please check your internet connection and try again.")
+      } else {
+        setError("Upload failed. Please try again or contact support if the problem persists.")
+      }
+    }
+  }
+
+  const pollFileStatus = (fileServerId, fileId) => {
+    const interval = setInterval(async () => {
+      try {
+        const statusResponse = await axios.get(
+          `https://legalmindai-backend-production.up.railway.app/api/status/${fileServerId}`,
+        )
+        const status = statusResponse.data.status
+        const progress = statusResponse.data.progress
+
+        if (status === "completed") {
+          clearInterval(interval)
+
+          const docResponse = await axios.get(
+            `https://legalmindai-backend-production.up.railway.app/api/document/${fileServerId}`,
+          )
+          const extractedText = docResponse.data.extractedText
+
+          const summaryResponse = await axios.post(
+            "https://legalmindai-backend-production.up.railway.app/api/generate-summary",
+            {
+              prompt: extractedText,
+            },
+          )
+
+          const type = summaryResponse.data.result.type || "Summary"
+
+          const completedFile = {
+            id: fileId,
+            name: files.find((f) => f.id === fileId)?.name || "Unknown",
+            type: type,
+            status: "completed",
+            progress: 100,
+            analysis: summaryResponse.data.result,
+            riskScore: summaryResponse.data.result.riskScore,
+            uploadDate: Date.now(),
+            deadline: summaryResponse.data.result.deadline || null,
+          }
+
+          setFiles((prev) => prev.map((f) => (f.id === fileId ? completedFile : f)))
+
+          // Check for urgent documents after completion
+          if (completedFile.deadline) {
+            checkUrgentDocuments([completedFile])
+          }
+        } else if (status === "processing") {
+          setFiles((prev) =>
+            prev.map((f) =>
+              f.id === fileId
+                ? {
+                    ...f,
+                    progress: Number(progress),
+                    status: "processing",
+                  }
+                : f,
+            ),
+          )
+        } else if (status === "error") {
+          clearInterval(interval)
+          setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f)))
+          setError("Document processing failed. Please try uploading again.")
+        }
+      } catch (err) {
+        console.error("Polling failed", err)
+        clearInterval(interval)
+        setFiles((prev) => prev.map((f) => (f.id === fileId ? { ...f, status: "error", progress: 0 } : f)))
+        setError("Connection lost during processing. Please refresh and try again.")
+      }
+    }, 1000)
+  }
+
+  const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    // Handle rejected files
+    if (rejectedFiles.length > 0) {
+      const rejection = rejectedFiles[0]
+      if (rejection.errors.some((e) => e.code === "file-too-large")) {
+        setError("File is too large. Please upload files smaller than 10MB.")
+      } else if (rejection.errors.some((e) => e.code === "file-invalid-type")) {
+        setError("Unsupported file type. Please upload PDF, DOC, or DOCX files only.")
+      } else {
+        setError("File upload failed. Please try again.")
+      }
+      return
+    }
+
+    const newFiles = acceptedFiles.map((file) => ({
+      id: Math.random().toString(36).substr(2, 9),
+      name: file.name,
+      size: formatFileSize(file.size),
+      status: "uploading",
+      progress: 0,
+      file,
+    }))
+
+    setFiles((prev) => [...prev, ...newFiles])
+
+    newFiles.forEach((file) => {
+      uploadAndAnalyzeFile(file.file, file.id)
+    })
+  }, [])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -133,8 +157,6 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
     },
     maxSize: 10 * 1024 * 1024, // 10MB
   })
-
-
 
   const removeFile = (fileId) => {
     setFiles((prev) => prev.filter((f) => f.id !== fileId))
@@ -149,30 +171,25 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
   }
 
   const completedFiles = files.filter((f) => f.status === "completed")
+
   useEffect(() => {
-  const filesToSave = files.filter(f =>
-    (f.status === "completed" || f.status === "processing") && !f.savedToLocal
-  )
+    const filesToSave = files.filter((f) => (f.status === "completed" || f.status === "processing") && !f.savedToLocal)
 
-  if (filesToSave.length > 0) {
-    const existingDocs = JSON.parse(localStorage.getItem("documents")) || []
-    const updatedDocs = [...existingDocs, ...filesToSave.map(f => ({ ...f, savedToLocal: true }))]
+    if (filesToSave.length > 0) {
+      const existingDocs = JSON.parse(localStorage.getItem("documents")) || []
+      const updatedDocs = [...existingDocs, ...filesToSave.map((f) => ({ ...f, savedToLocal: true }))]
 
-    localStorage.setItem("documents", JSON.stringify(updatedDocs))
+      localStorage.setItem("documents", JSON.stringify(updatedDocs))
 
-    // Mark them as saved in state to avoid resaving later
-    setFiles(prev =>
-      prev.map(f =>
-        filesToSave.find(c => c.id === f.id)
-          ? { ...f, savedToLocal: true }
-          : f
-      )
-    )
-  }
-}, [files])
+      setFiles((prev) => prev.map((f) => (filesToSave.find((c) => c.id === f.id) ? { ...f, savedToLocal: true } : f)))
+    }
+  }, [files])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
+      {/* Error Popup */}
+      <ErrorPopup error={error} onClose={() => setError("")} duration={6000} />
+
       {/* Header */}
       <motion.header
         className="sticky top-0 z-50 border-b bg-white/80 backdrop-blur-sm"
@@ -237,28 +254,28 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
 
       <div className="container mx-auto px-4 py-8 max-w-4xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-slate-800 mb-2">Upload Legal Documents</h1>
-          <p className="text-slate-600">
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 mb-2">Upload Legal Documents</h1>
+          <p className="text-slate-600 text-sm md:text-base">
             Upload your legal documents to get AI-powered analysis, risk assessment, and negotiation insights.
           </p>
         </div>
 
         {/* Upload Area */}
         <Card className="mb-8">
-          <CardContent className="p-8">
+          <CardContent className="p-6 md:p-8">
             <div
               {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-12 text-center cursor-pointer transition-colors ${
+              className={`border-2 border-dashed rounded-lg p-8 md:p-12 text-center cursor-pointer transition-colors ${
                 isDragActive ? "border-blue-500 bg-blue-50" : "border-slate-300 hover:border-blue-400 hover:bg-slate-50"
               }`}
             >
               <input {...getInputProps()} />
-              <Upload className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-slate-800 mb-2">
+              <Upload className="w-10 h-10 md:w-12 md:h-12 text-slate-400 mx-auto mb-4" />
+              <h3 className="text-base md:text-lg font-semibold text-slate-800 mb-2">
                 {isDragActive ? "Drop files here" : "Drag & drop files here"}
               </h3>
-              <p className="text-slate-600 mb-4">or click to browse your computer</p>
-              <p className="text-sm text-slate-500">Supports PDF, DOC, DOCX files up to 10MB</p>
+              <p className="text-slate-600 mb-4 text-sm md:text-base">or click to browse your computer</p>
+              <p className="text-xs md:text-sm text-slate-500">Supports PDF, DOC, DOCX files up to 10MB</p>
             </div>
           </CardContent>
         </Card>
@@ -267,8 +284,8 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
         {files.length > 0 && (
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Processing Files</CardTitle>
-              <CardDescription>Your documents are being analyzed by our AI system</CardDescription>
+              <CardTitle className="text-lg md:text-xl">Processing Files</CardTitle>
+              <CardDescription className="text-sm">Your documents are being analyzed by our AI system</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -302,7 +319,7 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
                         <span className="text-xs text-slate-500">{file.progress}%</span>
                       </div>
                       <p className="text-xs text-slate-500 mt-1">
-                        {(file.size)} • {file.status}
+                        {file.size} • {file.status}
                       </p>
                     </div>
                   </div>
@@ -316,11 +333,13 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
         {completedFiles.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center space-x-2">
+              <CardTitle className="flex items-center space-x-2 text-lg md:text-xl">
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 <span>Analysis Complete</span>
               </CardTitle>
-              <CardDescription>Your documents have been processed and are ready for review</CardDescription>
+              <CardDescription className="text-sm">
+                Your documents have been processed and are ready for review
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
@@ -329,17 +348,16 @@ const uploadAndAnalyzeFile = async (file, fileId) => {
                     <div className="flex items-center space-x-3">
                       <FileText className="w-5 h-5 text-blue-600" />
                       <div>
-                        <p className="font-medium text-slate-800">{file.name}</p>
-                        <p className="text-sm text-slate-600">
-                          {file.type} • {formatFileSize(file.size)}
+                        <p className="font-medium text-slate-800 text-sm md:text-base">{file.name}</p>
+                        <p className="text-xs md:text-sm text-slate-600">
+                          {file.type} • {file.size}
                         </p>
                       </div>
                     </div>
-                    <Link
-                      to={`/analysis/${file.id}`}
-                      state={{ file }}
-                    >
-                      <Button size="sm">View Analysis</Button>
+                    <Link to={`/analysis/${file.id}`} state={{ file }}>
+                      <Button size="sm" className="text-xs md:text-sm">
+                        View Analysis
+                      </Button>
                     </Link>
                   </div>
                 ))}
