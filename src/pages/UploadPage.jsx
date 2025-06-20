@@ -72,11 +72,11 @@ export default function UploadPage() {
             },
           )
 
-          const type = summaryResponse.data.result.type || "Summary"
+          const type = summaryResponse.data.result.type
 
           const completedFile = {
             id: fileId,
-            name: files.find((f) => f.id === fileId)?.name || "Unknown",
+            name: files.find((f) => f.id === fileId)?.name,
             type: type,
             status: "completed",
             progress: 100,
