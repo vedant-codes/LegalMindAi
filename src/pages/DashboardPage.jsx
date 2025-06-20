@@ -777,6 +777,7 @@ export default function DashboardPage() {
                                 </div>
                               </div>
 
+
                               <button
                                 onClick={() => handleModifyDocument(file.id)}
                                 className="flex items-center w-full px-2 py-2 text-sm rounded-lg hover:bg-blue-50 hover:text-blue-700 cursor-pointer transition-colors duration-150 group"
