@@ -225,8 +225,9 @@ export default function DashboardPage() {
 
   useEffect(() => {
     // Use mock data for demo - in real app would load from localStorage
-    const storedDocs = JSON.parse(localStorage.getItem("documents"))
-    setDocuments(storedDocs)
+    const storedDocs = JSON.parse(localStorage.getItem("documents")) || [];
+    setDocuments(storedDocs);
+
 
     // Check for urgent documents using global alarm system
     checkUrgentDocuments(storedDocs)
