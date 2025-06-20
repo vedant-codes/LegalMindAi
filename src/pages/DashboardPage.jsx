@@ -648,26 +648,26 @@ export default function DashboardPage() {
                             <DropdownMenuContent align="end" className="w-48">
                               <DropdownMenuLabel>Document Actions</DropdownMenuLabel>
                               <DropdownMenuSeparator />
-                              <DropdownMenuItem onClick={() => handleModifyDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleModifyDocument(file.id)}>
                                 <Edit className="w-4 h-4 mr-2" />
                                 Modify
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDuplicateDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleDuplicateDocument(file.id)}>
                                 <Copy className="w-4 h-4 mr-2" />
                                 Duplicate
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleShareDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleShareDocument(file.id)}>
                                 <Share2 className="w-4 h-4 mr-2" />
                                 Share
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleArchiveDocument(doc.id)}>
+                              <DropdownMenuItem onClick={() => handleArchiveDocument(file.id)}>
                                 <Archive className="w-4 h-4 mr-2" />
                                 Archive
                               </DropdownMenuItem>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => {
-                                  setDocumentToDelete(doc)
+                                  setDocumentToDelete(file)
                                   setShowDeleteDialog(true)
                                 }}
                                 className="text-red-600 focus:text-red-600"
