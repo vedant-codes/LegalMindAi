@@ -142,7 +142,7 @@ export default function HomePage() {
               </motion.div>
             ))}
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Link to="/signin">
+              <Link to="/dashboard">
                 <Button className="bg-blue-600 hover:bg-blue-700 text-white">Get Started</Button>
               </Link>
             </motion.div>
@@ -189,7 +189,7 @@ export default function HomePage() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6, duration: 0.8 }}
             >
-              <Link to="/signin">
+              <Link to="/dashboard">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                   <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3">
                     <Upload className="w-5 h-5 mr-2" />
